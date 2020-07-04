@@ -1,9 +1,15 @@
+import os
+
 import transliterate
 import json
 from bs4 import BeautifulSoup
 import requests
 
-with open('cities_bd.json', 'r', encoding='utf-8') as f:
+CUR_PATH = os.path.realpath(__file__)
+BASE_DIR = os.path.dirname(os.path.dirname(CUR_PATH))
+DATA_DIR = os.path.join(BASE_DIR, 'data')
+
+with open(os.path.join(DATA_DIR, 'cities_bd.json'), 'r', encoding='utf-8') as f:
     data = json.load(f)
 
 
@@ -29,3 +35,5 @@ def get_response(city):
     return temp
 
 
+if __name__ == '__main__':
+    print(get_response('ТэджоН'))
