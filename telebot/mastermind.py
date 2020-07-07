@@ -35,7 +35,7 @@ def get_response(city_name):
         temp = temp.find(class_='temp__value').text
     except:
         temp = 'Try again'
-    return str(temp)
+    return 'ok'
 
 
 if __name__ == '__main__':
