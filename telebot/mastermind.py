@@ -28,13 +28,11 @@ def translit_name(name):
 
 def get_response(city_name):
     city = translit_name(city_name)
-    try:
-        source = requests.get('https://yandex.ru/pogoda/' + city)
-        soup = BeautifulSoup(source.content, 'lxml')
-        temp = soup.find('div', class_='fact__temp-wrap')
-        temp = temp.find(class_='temp__value').text
-    except:
-        temp = 'Try again'
+    source = requests.get('https://yandex.ru/pogoda/' + city)
+    soup = BeautifulSoup(source.content, 'lxml')
+    temp = soup.find('div', class_='fact__temp-wrap')
+    temp = temp.find(class_='temp__value').text
+
     return 'ok'
 
 
