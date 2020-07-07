@@ -1,9 +1,9 @@
-# import os
-#
-import transliterate
-# import json
-# from bs4 import BeautifulSoup
-# import requests
+import os
+
+# import transliterate
+import json
+from bs4 import BeautifulSoup
+import requests
 
 # CUR_PATH = os.path.realpath(__file__)
 # BASE_DIR = os.path.dirname(os.path.dirname(CUR_PATH))
