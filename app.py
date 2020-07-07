@@ -26,7 +26,7 @@ def respond():
     response = get_response(text)
     bot.sendMessage(chat_id=chat_id, text=response, )
 
-    return 'ok'
+    return
 
 
 @app.route('/setwebhook', methods=['GET', 'POST'])
