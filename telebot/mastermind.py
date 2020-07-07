@@ -29,10 +29,12 @@ with open(os.path.join(DATA_DIR, 'cities_bd.json'), 'r', encoding='utf-8') as f:
 def get_response(city):
     # city = translit_name(city_name)
     try:
-        source = requests.get('https://yandex.ru/pogoda/' + city)
-        soup = BeautifulSoup(source.content, 'lxml')
-        temp = soup.find('div', class_='fact__temp-wrap')
-        temp = temp.find(class_='temp__value').text
+        isinstance(city, str)
+        # source = requests.get('https://yandex.ru/pogoda/' + city)
+        # soup = BeautifulSoup(source.content, 'lxml')
+        # temp = soup.find('div', class_='fact__temp-wrap')
+        # temp = temp.find(class_='temp__value').text
+        temp = city
     except:
         temp = 'Try again'
     return temp
