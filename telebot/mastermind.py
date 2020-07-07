@@ -1,6 +1,6 @@
-import os
+# import os
 #
-# import transliterate
+import transliterate
 # import json
 # from bs4 import BeautifulSoup
 # import requests
