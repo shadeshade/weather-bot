@@ -1,6 +1,6 @@
 import os
 
-# import transliterate
+import transliterate
 import json
 from bs4 import BeautifulSoup
 import requests
@@ -17,13 +17,13 @@ def translit_name(name):
     if name.title() in data:
         return data[name.title()]
     else:
-        # try:
-        #     new_name = transliterate.translit(name, reversed=True)
-        #     if 'х' in name.lower():
-        #         new_name = new_name.lower().replace('h', 'kh')
-        # except:
-        #     new_name = name
-        return name
+        try:
+            new_name = transliterate.translit(name, reversed=True)
+            if 'х' in name.lower():
+                new_name = new_name.lower().replace('h', 'kh')
+        except:
+            new_name = name
+        return new_name
 
 
 def get_response(city_name):
