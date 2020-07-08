@@ -16,7 +16,7 @@ for k, v in data2.items():
 for k, v in data3.items():
     cities[k] = v
 
-with open('cities_bd.json', 'w', encoding='utf-8') as f:
+with open('temp_cities_db.json', 'w', encoding='utf-8') as f:
     json.dump(cities, f, ensure_ascii=False, indent=4)
 
 js1.close()
