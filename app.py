@@ -7,6 +7,7 @@ global bot
 global TOKEN
 TOKEN = bot_token
 bot = telegram.Bot(token=TOKEN)
+bot.setWebhook(f'{URL}{TOKEN}')
 
 app = Flask(__name__)
 
@@ -29,13 +30,13 @@ def respond():
     return 'ok'
 
 
-@app.route('/setwebhook', methods=['GET', 'POST'])
-def set_webhook():
-    s = bot.setWebhook(f'{URL}{TOKEN}')
-    if s:
-        return "webhook setup ok"
-    else:
-        return "webhook setup failed"
+# @app.route('/setwebhook', methods=['GET', 'POST'])
+# def set_webhook():
+#     s =
+#     if s:
+#         return "webhook setup ok"
+#     else:
+#         return "webhook setup failed"
 
 
 if __name__ == '__main__':
