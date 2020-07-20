@@ -4,7 +4,6 @@ from flask import Flask, request
 import telegram
 from telebot.credentials import TOKEN, DEPLOY_DOMAIN
 from telebot.mastermind import get_response
-from telebot.settings import *
 
 bot = telegram.Bot(token=TOKEN)
 app = Flask(__name__)
