@@ -44,10 +44,12 @@ def set_webhook():
         return "webhook setup failed"
 
 
+# if __name__ == '__main__':
+#     if DEBUG:
+#         app.run(host=HOST, port=PORT, debug=True,
+#                 ssl_context=('./SSL_certs/localhost_crt.pem', './SSL_certs/localhost_key.pem'))
+#     else:
+#         # app.run(host=HOST, port=PORT)
+
 if __name__ == '__main__':
-    if DEBUG:
-        app.run(host=HOST, port=PORT, debug=True,
-                ssl_context=('./SSL_certs/localhost_crt.pem', './SSL_certs/localhost_key.pem'))
-    else:
-        # app.run(host=HOST, port=PORT)
-        app.run(threaded=True)
+    app.run(threaded=True)
