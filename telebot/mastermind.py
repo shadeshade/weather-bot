@@ -39,4 +39,4 @@ def get_response(city_name):
 
 
 if __name__ == '__main__':
-    print(get_response('Питер'))
+    print(get_response('Махачкала'))
