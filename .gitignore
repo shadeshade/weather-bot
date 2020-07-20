@@ -3,4 +3,4 @@ venv
 weather.py
 scratch.py
 /shade-weather-telegram-bot/
-.exe
+ngrok.exe
