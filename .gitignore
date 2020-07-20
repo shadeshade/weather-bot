@@ -2,5 +2,5 @@ venv
 #credentials.py
 weather.py
 scratch.py
-/shade-weather-telegram-bot/
+#/shade-weather-telegram-bot/
 ngrok.exe

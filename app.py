@@ -2,7 +2,7 @@ from time import sleep
 
 from flask import Flask, request
 import telegram
-from telebot.credentials import TOKEN
+from telebot.credentials import TOKEN, DEPLOY_DOMAIN
 from telebot.mastermind import get_response
 from telebot.settings import *
 
