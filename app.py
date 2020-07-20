@@ -29,7 +29,6 @@ def respond():
     return 'ok'
 
 
-@app.route('/setwebhook', methods=['GET', 'POST'])
 def set_webhook():
     s = bot.setWebhook(f'{URL}{TOKEN}')
     if s:
@@ -37,6 +36,7 @@ def set_webhook():
     else:
         return "webhook setup failed"
 
+set_webhook()
 
 if __name__ == '__main__':
     app.run(threaded=True)
