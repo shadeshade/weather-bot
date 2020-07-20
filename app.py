@@ -42,7 +42,6 @@ def set_webhook():
     else:
         return "webhook setup failed"
 
-
 # if __name__ == '__main__':
 #     if DEBUG:
 #         app.run(host=HOST, port=PORT, debug=True,
