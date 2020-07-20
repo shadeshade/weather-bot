@@ -15,7 +15,7 @@ app = Flask(__name__)
 #     bot.set_webhook(url="https://{}/{}".format(DEPLOY_DOMAIN, TOKEN))
 
 
-
+heroku login
 @app.route(f'/{TOKEN}', methods=['POST'])
 def respond():
     # retrieve the message in JSON and then transform it to Telegram object
