@@ -8,12 +8,12 @@ from telebot.mastermind import get_response
 bot = telegram.Bot(token=TOKEN)
 app = Flask(__name__)
 
+
 # if DEBUG:
 #     bot.set_webhook(url="https://{}:{}/{}".format(SERVER_IP, PORT, TOKEN),
 #                     certificate=open('./SSL_certs/localhost_crt.pem', 'rb'))
 # else:
 #     bot.set_webhook(url="https://{}/{}".format(DEPLOY_DOMAIN, TOKEN))
-
 
 
 @app.route(f'/{TOKEN}', methods=['POST'])
