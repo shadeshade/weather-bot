@@ -1,19 +1,14 @@
-from time import sleep
-
 from flask import Flask, request
 import telegram
-from telebot.credentials import TOKEN, DEPLOY_DOMAIN
+from telebot.credentials import bot_token, bot_user_name, URL
 from telebot.mastermind import get_response
 
+global bot
+global TOKEN
+TOKEN = bot_token
 bot = telegram.Bot(token=TOKEN)
+
 app = Flask(__name__)
-
-
-# if DEBUG:
-#     bot.set_webhook(url="https://{}:{}/{}".format(SERVER_IP, PORT, TOKEN),
-#                     certificate=open('./SSL_certs/localhost_crt.pem', 'rb'))
-# else:
-#     bot.set_webhook(url="https://{}/{}".format(DEPLOY_DOMAIN, TOKEN))
 
 
 @app.route(f'/{TOKEN}', methods=['POST'])
@@ -36,19 +31,12 @@ def respond():
 
 @app.route('/setwebhook', methods=['GET', 'POST'])
 def set_webhook():
-    s = bot.setWebhook(f'{DEPLOY_DOMAIN}{TOKEN}')
+    s = bot.setWebhook(f'{URL}{TOKEN}')
     if s:
         return "webhook setup ok"
     else:
         return "webhook setup failed"
 
-
-# if __name__ == '__main__':
-#     if DEBUG:
-#         app.run(host=HOST, port=PORT, debug=True,
-#                 ssl_context=('./SSL_certs/localhost_crt.pem', './SSL_certs/localhost_key.pem'))
-#     else:
-#         # app.run(host=HOST, port=PORT)
 
 if __name__ == '__main__':
     app.run(threaded=True)
