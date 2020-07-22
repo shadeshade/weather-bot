@@ -1,19 +1,32 @@
-from time import sleep
-
 from flask import Flask, request
 import telegram
-from telebot.credentials import TOKEN, DEPLOY_DOMAIN
+from telebot.credentials import TOKEN, HEROKU_DEPLOY_DOMAIN, NGROK_DEPLOY_DOMAIN
 from telebot.mastermind import get_response
+from telebot.settings import DEBUG, PORT, SERVER_IP
 
 bot = telegram.Bot(token=TOKEN)
 app = Flask(__name__)
 
 
+@app.route('/setwebhook', methods=['GET', 'POST'])
+def set_webhook():
+    if DEBUG:
+        s = bot.setWebhook(f'{NGROK_DEPLOY_DOMAIN}/{TOKEN}')
+    else:
+        s = bot.setWebhook(f'{HEROKU_DEPLOY_DOMAIN}/{TOKEN}')
+
+    if s:
+        return "webhook setup ok"
+    else:
+        return "webhook setup failed"
+
+
+set_webhook()
+
+
 # if DEBUG:
-#     bot.set_webhook(url="https://{}:{}/{}".format(SERVER_IP, PORT, TOKEN),
-#                     certificate=open('./SSL_certs/localhost_crt.pem', 'rb'))
+#     bot.set_webhook(url=f"https://{SERVER_IP}:{PORT}/{TOKEN}")
 # else:
-#     bot.set_webhook(url="https://{}/{}".format(DEPLOY_DOMAIN, TOKEN))
 
 
 @app.route(f'/{TOKEN}', methods=['POST'])
@@ -34,21 +47,12 @@ def respond():
     return 'ok'
 
 
-@app.route('/setwebhook', methods=['GET', 'POST'])
-def set_webhook():
-    s = bot.setWebhook(f'{DEPLOY_DOMAIN}{TOKEN}')
-    if s:
-        return "webhook setup ok"
-    else:
-        return "webhook setup failed"
-
-
 # if __name__ == '__main__':
 #     if DEBUG:
 #         app.run(host=HOST, port=PORT, debug=True,
 #                 ssl_context=('./SSL_certs/localhost_crt.pem', './SSL_certs/localhost_key.pem'))
 #     else:
-#         # app.run(host=HOST, port=PORT)
+#         app.run(threaded=True)
 
 if __name__ == '__main__':
-    app.run(threaded=True)
+    app.run(threaded=True, host=SERVER_IP, port=PORT, debug=DEBUG)
