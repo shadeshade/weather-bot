@@ -10,13 +10,15 @@
 
 
 #Installation
+
 Open the repository in development environment.
 * install requirements
 
  `$ pip install requirements.txt`
 
 #Deploying on Heroku
-Create credentials.py in the root of the project and write your data
+
+Create `credentials.py` in the root of the project and write your data
  in quotes:
 
 `TOKEN = ""`\
@@ -26,7 +28,7 @@ From your dashboard on Heroku create a new app, once you create
  an app it will direct you to the deploy page, open the settings 
  tab in new window and copy the domain of the app which will be 
  something like https://appname.herokuapp.com/ and paste it in 
- the HEROKU_DEPLOY_DOMAIN variable inside our credentials.py
+ the `HEROKU_DEPLOY_DOMAIN` variable inside our `credentials.py`
  
  now go back to the deploy tab and proceed with the steps:
 * login to heroku
@@ -47,7 +49,7 @@ note that sometimes this method get stuck in waiting for login,
 
 `$ git add .`\
 `$ git commit -m "first commit"`\
-`$ git push heroku master`\
+`$ git push heroku master`
 
 at this point you will see the building progress in your terminal, 
 if everything went okay you will see something like so
@@ -64,6 +66,7 @@ something like `https://appname.herokuapp.com/setwebhook`, if you see `webhook
 setup ok` then you are ready to go!
 
 #Deploying on Local Host (Ngrok)
+
 Download Ngrok from the link `https://ngrok.com/download`.
 Carry out the following steps:
 
