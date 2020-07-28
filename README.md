@@ -77,4 +77,4 @@ and insert the specified address in quotes
 
 ![Image](statics/NgrokCapture.PNG)
 
-Now we can run `app.py` 
+Now you can run `app.py` 

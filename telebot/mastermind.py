@@ -13,7 +13,24 @@ with open(os.path.join(DATA_DIR, 'cities_db.json'), 'r', encoding='utf-8') as f:
     data = json.load(f)
 
 
+# def start_command(key_word):
+
+
+def get_response(city_name):
+    '''returns the current temperature in the specified city '''
+    city = translit_name(city_name)
+    try:
+        source = requests.get('https://yandex.ru/pogoda/' + city)
+        soup = BeautifulSoup(source.content, 'lxml')
+        temp = soup.find('div', class_='fact__temp-wrap')
+        temp = temp.find(class_='temp__value').text
+    except:
+        temp = 'Try again'
+    return temp
+
+
 def translit_name(name):
+    '''translits a city name for get_response function in case the name is not in the cities_db'''
     if name.title() in data:
         return data[name.title()]
     else:
@@ -24,18 +41,6 @@ def translit_name(name):
         except:
             new_name = name
         return new_name
-
-
-def get_response(city_name):
-    city = translit_name(city_name)
-    try:
-        source = requests.get('https://yandex.ru/pogoda/' + city)
-        soup = BeautifulSoup(source.content, 'lxml')
-        temp = soup.find('div', class_='fact__temp-wrap')
-        temp = temp.find(class_='temp__value').text
-    except:
-        temp = 'Try again'
-    return temp
 
 
 if __name__ == '__main__':
