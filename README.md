@@ -18,12 +18,15 @@ Open the repository in development environment.
 
 # Deploying on Heroku
 
+Set `DEBUG = False` in settings.py
+
 Create `credentials.py` in the root of the project and write your data
  in quotes:
 
 `TOKEN = ""`\
 `BOT_NAME = ""`\
-`HEROKU_DEPLOY_DOMAIN = ""`\
+`HEROKU_DEPLOY_DOMAIN = ""`
+
 From your dashboard on Heroku create a new app, once you create
  an app it will direct you to the deploy page, open the settings 
  tab in new window and copy the domain of the app which will be 
@@ -66,6 +69,8 @@ something like `https://appname.herokuapp.com/setwebhook`, if you see `webhook
 setup ok` then you are ready to go!
 
 # Deploying on Local Host (Ngrok)
+
+Set `DEBUG = True` in settings.py
 
 Download Ngrok from the link `https://ngrok.com/download`.
 Carry out the following steps:
