@@ -1,4 +1,4 @@
-#Weather Telegram Bot
+# Weather Telegram Bot
 
  The bot helps to find out the current weather in the specified city.
  It can also send a daily weather report for the whole day
@@ -9,14 +9,14 @@
  this week.
 
 
-#Installation
+# Installation
 
 Open the repository in development environment.
 * install requirements
 
  `$ pip install requirements.txt`
 
-#Deploying on Heroku
+# Deploying on Heroku
 
 Create `credentials.py` in the root of the project and write your data
  in quotes:
@@ -65,7 +65,7 @@ and add to the end of the link `/setwebhook` so that the address will be
 something like `https://appname.herokuapp.com/setwebhook`, if you see `webhook 
 setup ok` then you are ready to go!
 
-#Deploying on Local Host (Ngrok)
+# Deploying on Local Host (Ngrok)
 
 Download Ngrok from the link `https://ngrok.com/download`.
 Carry out the following steps:
