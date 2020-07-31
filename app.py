@@ -1,7 +1,7 @@
 from flask import Flask, request
 import telegram
 from telebot.credentials import TOKEN, HEROKU_DEPLOY_DOMAIN, NGROK_DEPLOY_DOMAIN
-from telebot.mastermind import get_response
+from telebot.mastermind import *
 from telebot.settings import DEBUG, PORT, SERVER_IP
 
 bot = telegram.Bot(token=TOKEN)
@@ -24,11 +24,6 @@ def set_webhook():
 set_webhook()
 
 
-# if DEBUG:
-#     bot.set_webhook(url=f"https://{SERVER_IP}:{PORT}/{TOKEN}")
-# else:
-
-
 @app.route(f'/{TOKEN}', methods=['POST'])
 def respond():
     # retrieve the message in JSON and then transform it to Telegram object
@@ -41,11 +36,16 @@ def respond():
     text = update.message.text.encode('utf-8').decode()
     print("got text message :", text)
 
-    response = get_response(text)
+    if text == '/start':
+        first_name = update.message.chat.first_name
+        response = start_command(first_name)
+    elif text == '/help':
+        response = help_command()
+    else:
+        response = get_response(text)
+
     bot.sendMessage(chat_id=chat_id, text=response, )
-
     return 'ok'
-
 
 
 # if __name__ == '__main__':

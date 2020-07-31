@@ -1,46 +1,30 @@
-import os
-
-import transliterate
-import json
-from bs4 import BeautifulSoup
-import requests
-
-CUR_PATH = os.path.realpath(__file__)
-BASE_DIR = os.path.dirname(os.path.dirname(CUR_PATH))
-DATA_DIR = os.path.join(BASE_DIR, 'data')
-
-with open(os.path.join(DATA_DIR, 'cities_db.json'), 'r', encoding='utf-8') as f:
-    data = json.load(f)
-
-
-# def start_command(key_word):
+from telebot.sub_mastermind import *
 
 
 def get_response(city_name):
-    '''returns the current temperature in the specified city '''
-    city = translit_name(city_name)
-    try:
-        source = requests.get('https://yandex.ru/pogoda/' + city)
-        soup = BeautifulSoup(source.content, 'lxml')
-        temp = soup.find('div', class_='fact__temp-wrap')
-        temp = temp.find(class_='temp__value').text
-    except:
-        temp = 'Try again'
-    return temp
+    '''basic function'''
+    transliterated_city = transliterate_name(city_name)
+    current_temperature = get_temperature(transliterated_city)
+    return current_temperature
 
 
-def translit_name(name):
-    '''translits a city name for get_response function in case the name is not in the cities_db'''
-    if name.title() in data:
-        return data[name.title()]
-    else:
-        try:
-            new_name = transliterate.translit(name, reversed=True)
-            if 'х' in name.lower():
-                new_name = new_name.lower().replace('h', 'kh')
-        except:
-            new_name = name
-        return new_name
+def start_command(first_name):
+    '''returns greeting and a short navigate information'''
+    welcome_text = 'Hello, ' + first_name + ' !\n'
+    text = welcome_text + 'Write down your location 🌏 \n' \
+                          'For more options use /help'
+    return text
+
+
+def help_command():
+    '''returns commands list'''
+    text = '/start:\nStart bot interaction.\n\n' \
+           '/daily:\nSet daily time you want to receive weather information. More than one city addition is available\n\n' \
+           '/remove_daily:\nChoose the city to remove from your daily info.\n\n' \
+           '/reminder:\nSet reminder about the incoming event you want. E.g. receive a message that rain' \
+           ' is expected in two days\n\n' \
+           '/remove_reminder:\nChoose the reminder name to remove from your reminder list.'
+    return text
 
 
 if __name__ == '__main__':
