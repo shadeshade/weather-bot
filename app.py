@@ -43,17 +43,15 @@ def respond():
         response = help_command()
     else:
         response = get_response(text)
+        # temp_dict = response
+        # response = temp_dict['current_temperature']
+        # photo_src = temp_dict['photo_src']
 
     bot.sendMessage(chat_id=chat_id, text=response, )
+    # photo_src = 'https://uraloved.ru/images/mesta/perm-krai/kama/kama-1.jpg'
+    # bot.sendPhoto(chat_id=chat_id, photo=photo_src)
     return 'ok'
 
-
-# if __name__ == '__main__':
-#     if DEBUG:
-#         app.run(host=HOST, port=PORT, debug=True,
-#                 ssl_context=('./SSL_certs/localhost_crt.pem', './SSL_certs/localhost_key.pem'))
-#     else:
-#         app.run(threaded=True)
 
 if __name__ == '__main__':
     app.run(threaded=True, host=SERVER_IP, port=PORT, debug=DEBUG)
