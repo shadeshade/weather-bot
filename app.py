@@ -1,11 +1,18 @@
 from flask import Flask, request
+import schedule
+from threading import Thread
+from time import sleep
 import telegram
+from apscheduler.schedulers.background import BackgroundScheduler
+
 from telebot.credentials import TOKEN, HEROKU_DEPLOY_DOMAIN, NGROK_DEPLOY_DOMAIN
 from telebot.mastermind import *
 from telebot.settings import DEBUG, PORT, SERVER_IP
 
 bot = telegram.Bot(token=TOKEN)
 app = Flask(__name__)
+
+scheduler = BackgroundScheduler()
 
 
 @app.route('/setwebhook', methods=['GET', 'POST'])
@@ -41,16 +48,44 @@ def respond():
         response = start_command(first_name)
     elif text == '/help':
         response = help_command()
+    elif text == '/daily':
+        daily()
+        response = 'Schedule was set up'
+
+
     else:
         response = get_response(text)
-        # temp_dict = response
-        # response = temp_dict['current_temperature']
-        # photo_src = temp_dict['photo_src']
 
     bot.sendMessage(chat_id=chat_id, text=response, )
-    # photo_src = 'https://uraloved.ru/images/mesta/perm-krai/kama/kama-1.jpg'
-    # bot.sendPhoto(chat_id=chat_id, photo=photo_src)
     return 'ok'
+
+
+def daily():
+    try:
+        scheduler.remove_all_jobs()
+        scheduler.add_job(daily_info, trigger='interval', seconds=6, )
+        scheduler.start()
+    except:
+        pass
+
+def daily_info(chat_id=272700497):
+    text_ = 11
+    return bot.sendMessage(chat_id=chat_id, text=text_, )
+
+
+#
+# def daily():
+#     # bot.sendMessage(chat_id=chat_id, text='text_')
+#     schedule.every(3).seconds.do(daily_info)
+#     # schedule.every().day.at().do(daily_info)
+#     Thread(target=schedule_checker).start()
+#     # schedule_checker()
+#
+#
+# def schedule_checker():
+#     while True:
+#         sleep(1)
+#         schedule.run_pending()
 
 
 if __name__ == '__main__':
