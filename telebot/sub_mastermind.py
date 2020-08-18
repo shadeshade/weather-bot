@@ -1,7 +1,5 @@
 import json
 import os
-import urllib.request
-
 import requests
 import transliterate
 from bs4 import BeautifulSoup
@@ -119,7 +117,7 @@ def get_extended_info(city_name):
 
 
 if __name__ == '__main__':
-    # print(get_extended_info('Almaty'))
-    (get_weather_info('Almaty'))
+    print(get_extended_info('Almaty'))
+    # (get_weather_info('Almaty'))
     # get_cities_data()
     pass

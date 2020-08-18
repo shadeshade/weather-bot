@@ -1,18 +1,31 @@
-from flask import Flask, request
-import schedule
-from threading import Thread
-from time import sleep
 import telegram
 from apscheduler.schedulers.background import BackgroundScheduler
+from flask import Flask, request
+from flask_sqlalchemy import SQLAlchemy
 
-from telebot.credentials import TOKEN, HEROKU_DEPLOY_DOMAIN, NGROK_DEPLOY_DOMAIN
+from telebot.credentials import *
 from telebot.mastermind import *
-from telebot.settings import DEBUG, PORT, SERVER_IP
+from telebot.settings import *
+
+# from telebot.models import User
 
 bot = telegram.Bot(token=TOKEN)
 app = Flask(__name__)
-
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///bot.db'
 scheduler = BackgroundScheduler()
+db = SQLAlchemy(app)
+
+
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(32), unique=True, nullable=False)
+    chat_id = db.Column(db.Integer, unique=True, nullable=False)
+    city_name = db.Column(db.String(20), )
+    city_name2 = db.Column(db.String(20), )
+    city_name3 = db.Column(db.String(20), )
+
+    def __repr__(self):
+        return f"User('{self.username}', '{self.chat_id}', '{self.city_name}', '{self.city_name2}', '{self.city_name3}',)"
 
 
 @app.route('/setwebhook', methods=['GET', 'POST'])
@@ -36,23 +49,34 @@ def respond():
     # retrieve the message in JSON and then transform it to Telegram object
     update = telegram.Update.de_json(request.get_json(force=True), bot)
 
-    chat_id = update.message.chat.id
-    msg_id = update.message.message_id
-
     # Telegram understands UTF-8, so encode text for unicode compatibility
     text = update.message.text.encode('utf-8').decode()
     print("got text message :", text)
 
+    chat_id = update.message.chat.id
+    msg_id = update.message.message_id
+
+    global _chat_id
+    _chat_id = chat_id
+
+    username = update.message.chat.first_name
+
+    # if transliterate_name(text):
+    #     city_name = transliterate_name(text)
+
+    if not bool(User.query.filter_by(chat_id=_chat_id).first()):
+        new_user = User(username=username, chat_id=_chat_id, city_name='маха')
+        db.session.add(new_user)
+        db.session.commit()
+
     if text == '/start':
-        first_name = update.message.chat.first_name
-        response = start_command(first_name)
+        # username = update.message.chat.first_name
+        response = start_command(username)
     elif text == '/help':
         response = help_command()
     elif text == '/daily':
-        daily()
         response = 'Schedule was set up'
-
-
+        daily()
     else:
         response = get_response(text)
 
@@ -63,14 +87,18 @@ def respond():
 def daily():
     try:
         scheduler.remove_all_jobs()
-        scheduler.add_job(daily_info, trigger='interval', seconds=6, )
+        scheduler.add_job(daily_info, trigger='interval', seconds=5, )
         scheduler.start()
     except:
         pass
 
-def daily_info(chat_id=272700497):
-    text_ = 11
-    return bot.sendMessage(chat_id=chat_id, text=text_, )
+
+def daily_info():
+    user = User.query.filter_by(chat_id=_chat_id).first()
+    city_name = user.city_name
+    chat_id = user.chat_id
+    response = daily_command(city_name)
+    return bot.sendMessage(chat_id, text=response, )
 
 
 #
