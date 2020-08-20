@@ -6,3 +6,5 @@ scratch.py
 /shade-weather-telegram-bot/
 ngrok.exe
 .env
+.idea
+__pycache__

@@ -96,50 +96,15 @@ def daily_info(chat_id):
     return bot.send_message(chat_id, text=response, )
 
 
-# @app.route(f'/{TOKEN}', methods=['POST'])
-# def respond():
-#     update = request.get_json()
-#     # Telegram understands UTF-8, so encode text for unicode compatibility
-#     text = update.message.text.encode('utf-8').decode()
-#     print("got text message :", text)
-#
-#     chat_id = update.message.chat.id
-#     msg_id = update.message.message_id
-#
-#     global _chat_id
-#     _chat_id = chat_id
-#
-#     username = update.message.chat.first_name
-#
-#     # if transliterate_name(text):
-#     #     city_name = transliterate_name(text)
-#
-#     if not bool(User.query.filter_by(chat_id=chat_id).first()):
-#         new_user = User(username=username, chat_id=chat_id, city_name='маха')
-#         db.session.add(new_user)
-#         db.session.commit()
-#
-#     if text == '/start':
-#         # username = update.message.chat.first_name
-#         start(update, username)
-#         return 'ok'
-#         # response = start_command(username)
-#     elif text == '/help':
-#         response = help_command()
-#     elif text == '/daily':
-#         response = 'Schedule was set up'
-#         daily()
-#     else:
-#         response = get_response(text)
-#
-#     bot.send_message(chat_id=chat_id, text=response, )
-#     return 'ok', 200
-
-
 # Handle all other messages with content_type 'text' (content_types defaults to ['text'])
 @bot.message_handler(func=lambda message: True)
 def respond(message):
     response = get_response(message.text)
+    if 'try again' not in response:
+        if not bool(User.query.filter_by(chat_id=message.chat.id).first()):
+            new_user = User(username=message.from_user.first_name, chat_id=message.chat.id, city_name=response)
+            db.session.add(new_user)
+            db.session.commit()
     bot.send_message(chat_id=message.chat.id, text=response, )
     return 'ok', 200
 
