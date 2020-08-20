@@ -1,8 +1,8 @@
-from telebot.sub_mastermind import *
+from telegrambot.sub_mastermind import *
 
 
 def get_response(city_name):
-    '''basic function'''
+    """basic function"""
     transliterated_city = transliterate_name(city_name)
 
     try:
@@ -20,7 +20,7 @@ def get_response(city_name):
     return response_message
 
 
-def daily_command(city_name, ):
+def get_daily(city_name, ):
     transliterated_city = transliterate_name(city_name)
     extended_info = get_extended_info(transliterated_city)
     # part_nums = [1,2,3,4]
@@ -35,15 +35,15 @@ def daily_command(city_name, ):
     return response_message
 
 
-def start_command(first_name):
-    '''returns greeting and a short navigate information'''
+def get_start(first_name):
+    """returns greeting and a short navigate information"""
     welcome_text = 'Hello, ' + first_name + ' !\n'
     text = welcome_text + 'Write down your location 🌏 \n' \
                           'For more options use /help'
     return text
 
 
-def help_command():
+def get_help():
     """returns commands list"""
     text = '/start:\nStart bot interaction.\n\n' \
            '/daily:\nSet daily time you want to receive weather information. More than one city addition is ' \
@@ -56,5 +56,5 @@ def help_command():
 
 
 if __name__ == '__main__':
-    print(daily_command('Питер'))
+    print(get_daily('Питер'))
     # print(get_response('Питер'))

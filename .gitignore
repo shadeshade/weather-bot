@@ -2,5 +2,7 @@ venv
 credentials.py
 weather.py
 scratch.py
+123.py
 /shade-weather-telegram-bot/
 ngrok.exe
+.env

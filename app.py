@@ -1,19 +1,19 @@
-import telegram
-from apscheduler.schedulers.background import BackgroundScheduler
 from flask import Flask, request
 from flask_sqlalchemy import SQLAlchemy
+from apscheduler.schedulers.background import BackgroundScheduler
+import telebot
 
-from telebot.credentials import *
-from telebot.mastermind import *
-from telebot.settings import *
+from telegrambot.credentials import *
+from telegrambot.mastermind import *
+from telegrambot.settings import *
 
-# from telebot.models import User
+# from telegrambot.models import User
+bot = telebot.TeleBot(TOKEN)
 
-bot = telegram.Bot(token=TOKEN)
-app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///bot.db'
+server = Flask(__name__)
+server.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///bot.db'
 scheduler = BackgroundScheduler()
-db = SQLAlchemy(app)
+db = SQLAlchemy(server)
 
 
 class User(db.Model):
@@ -25,15 +25,17 @@ class User(db.Model):
     city_name3 = db.Column(db.String(20), )
 
     def __repr__(self):
-        return f"User('{self.username}', '{self.chat_id}', '{self.city_name}', '{self.city_name2}', '{self.city_name3}',)"
+        return f"User('{self.username}', '{self.chat_id}', '{self.city_name}', '{self.city_name2}', '{self.city_name3}')"
 
 
-@app.route('/setwebhook', methods=['GET', 'POST'])
+@server.route('/setwebhook', methods=['GET', 'POST'])
 def set_webhook():
+    # bot.remove_webhook()
+    # sleep(1)
     if DEBUG:
-        s = bot.setWebhook(f'{NGROK_DEPLOY_DOMAIN}/{TOKEN}')
+        s = bot.set_webhook(f'{NGROK_DEPLOY_DOMAIN}/{TOKEN}')
     else:
-        s = bot.setWebhook(f'{HEROKU_DEPLOY_DOMAIN}/{TOKEN}')
+        s = bot.set_webhook(f'{HEROKU_DEPLOY_DOMAIN}/{TOKEN}')
 
     if s:
         return "webhook setup ok"
@@ -44,77 +46,103 @@ def set_webhook():
 set_webhook()
 
 
-@app.route(f'/{TOKEN}', methods=['POST'])
-def respond():
-    # retrieve the message in JSON and then transform it to Telegram object
-    update = telegram.Update.de_json(request.get_json(force=True), bot)
+@server.route(f'/{TOKEN}', methods=['POST'])
+def get_update():
+    bot.process_new_updates([telebot.types.Update.de_json(request.stream.read().decode("utf-8"))])
+    return "", 200
 
-    # Telegram understands UTF-8, so encode text for unicode compatibility
-    text = update.message.text.encode('utf-8').decode()
-    print("got text message :", text)
 
-    chat_id = update.message.chat.id
-    msg_id = update.message.message_id
+# Handle '/start'
+@bot.message_handler(commands=['start'])
+def command_start(message, ):
+    response = get_start(message.from_user.first_name)
+    return bot.send_message(message.chat.id, text=response, )
 
-    global _chat_id
-    _chat_id = chat_id
 
-    username = update.message.chat.first_name
+# Handle '/help'
+@bot.message_handler(commands=['help'])
+def command_help(message, ):
+    response = get_help()
+    return bot.send_message(message.chat.id, text=response, )
 
-    # if transliterate_name(text):
-    #     city_name = transliterate_name(text)
 
-    if not bool(User.query.filter_by(chat_id=_chat_id).first()):
-        new_user = User(username=username, chat_id=_chat_id, city_name='маха')
+# Handle '/daily'
+@bot.message_handler(commands=['daily'])
+def command_daily(message):
+    if not bool(User.query.filter_by(chat_id=message.chat.id).first()):
+        new_user = User(username=message.from_user.first_name, chat_id=message.chat.id, city_name='маха')
         db.session.add(new_user)
         db.session.commit()
-
-    if text == '/start':
-        # username = update.message.chat.first_name
-        response = start_command(username)
-    elif text == '/help':
-        response = help_command()
-    elif text == '/daily':
-        response = 'Schedule was set up'
-        daily()
-    else:
-        response = get_response(text)
-
-    bot.sendMessage(chat_id=chat_id, text=response, )
-    return 'ok'
+    set_daily(message.chat.id)
+    response = 'Schedule was set up'
+    return bot.send_message(message.chat.id, text=response, )
 
 
-def daily():
+# Handle '/daily' (setting a daily reminder)
+def set_daily(chat_id):
     try:
         scheduler.remove_all_jobs()
-        scheduler.add_job(daily_info, trigger='interval', seconds=5, )
+        scheduler.add_job(daily_info, trigger='interval', seconds=5, args=[chat_id])
         scheduler.start()
     except:
         pass
 
 
-def daily_info():
-    user = User.query.filter_by(chat_id=_chat_id).first()
+# Handle '/daily' (sending a reminder)
+def daily_info(chat_id):
+    user = User.query.filter_by(chat_id=chat_id).first()
     city_name = user.city_name
-    chat_id = user.chat_id
-    response = daily_command(city_name)
-    return bot.sendMessage(chat_id, text=response, )
+    response = get_daily(city_name)
+    return bot.send_message(chat_id, text=response, )
 
 
+# @app.route(f'/{TOKEN}', methods=['POST'])
+# def respond():
+#     update = request.get_json()
+#     # Telegram understands UTF-8, so encode text for unicode compatibility
+#     text = update.message.text.encode('utf-8').decode()
+#     print("got text message :", text)
 #
-# def daily():
-#     # bot.sendMessage(chat_id=chat_id, text='text_')
-#     schedule.every(3).seconds.do(daily_info)
-#     # schedule.every().day.at().do(daily_info)
-#     Thread(target=schedule_checker).start()
-#     # schedule_checker()
+#     chat_id = update.message.chat.id
+#     msg_id = update.message.message_id
 #
+#     global _chat_id
+#     _chat_id = chat_id
 #
-# def schedule_checker():
-#     while True:
-#         sleep(1)
-#         schedule.run_pending()
+#     username = update.message.chat.first_name
+#
+#     # if transliterate_name(text):
+#     #     city_name = transliterate_name(text)
+#
+#     if not bool(User.query.filter_by(chat_id=chat_id).first()):
+#         new_user = User(username=username, chat_id=chat_id, city_name='маха')
+#         db.session.add(new_user)
+#         db.session.commit()
+#
+#     if text == '/start':
+#         # username = update.message.chat.first_name
+#         start(update, username)
+#         return 'ok'
+#         # response = start_command(username)
+#     elif text == '/help':
+#         response = help_command()
+#     elif text == '/daily':
+#         response = 'Schedule was set up'
+#         daily()
+#     else:
+#         response = get_response(text)
+#
+#     bot.send_message(chat_id=chat_id, text=response, )
+#     return 'ok', 200
+
+
+# Handle all other messages with content_type 'text' (content_types defaults to ['text'])
+@bot.message_handler(func=lambda message: True)
+def respond(message):
+    response = get_response(message.text)
+    bot.send_message(chat_id=message.chat.id, text=response, )
+    return 'ok', 200
 
 
 if __name__ == '__main__':
-    app.run(threaded=True, host=SERVER_IP, port=PORT, debug=DEBUG)
+    server.run(threaded=True, host=SERVER_IP, port=PORT, debug=DEBUG)
