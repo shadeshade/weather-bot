@@ -8,7 +8,7 @@ def get_response(city_name):
     try:
         weather_info = get_weather_info(transliterated_city)
     except:
-        return 'try again'
+        return 'Try again'
 
     response_message = f'{weather_info["temperature"]}°C,\n' \
                        f'{weather_info["wind_speed"]}\n' \
