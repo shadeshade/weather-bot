@@ -1,7 +1,10 @@
+import logging
+from time import sleep
+
+import telebot
+from apscheduler.schedulers.background import BackgroundScheduler
 from flask import Flask, request
 from flask_sqlalchemy import SQLAlchemy
-from apscheduler.schedulers.background import BackgroundScheduler
-import telebot
 from telebot import types
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
@@ -10,12 +13,21 @@ from telegrambot.mastermind import *
 from telegrambot.settings import *
 
 # from telegrambot.models import User
+
 bot = telebot.TeleBot(TOKEN)
 
+logging.basicConfig(filename='log.log',
+                    level=logging.DEBUG,
+                    filemode='w')
+telebot.logger.setLevel(logging.DEBUG)
+
 server = Flask(__name__)
+
+server.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 server.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///bot.db'
-scheduler = BackgroundScheduler()
 db = SQLAlchemy(server)
+
+scheduler = BackgroundScheduler()
 
 
 class User(db.Model):
@@ -30,8 +42,8 @@ class User(db.Model):
 
 @server.route('/setwebhook', methods=['GET', 'POST'])
 def set_webhook():
-    # bot.remove_webhook()
-    # sleep(1)
+    bot.remove_webhook()
+    sleep(1)
     if DEBUG:
         s = bot.set_webhook(f'{NGROK_DEPLOY_DOMAIN}/{TOKEN}')
     else:
@@ -99,14 +111,17 @@ def daily_info(chat_id):
 def respond(message):
     if message.text == 'Погода':
         cur_user = User.query.filter_by(chat_id=message.chat.id).first()
-        response = get_response(cur_user.city_name)
+        try:
+            response = get_response(cur_user.city_name)
+        except:
+            response = 'Write down your location'
         bot.send_message(chat_id=message.chat.id, text=response, )
         return 'ok', 200
     elif message.sticker:
         response = ' 😈 '
     else:
         response = get_response(message.text)
-        if 'try again' not in response:
+        if 'Try again' not in response:
             if not bool(User.query.filter_by(chat_id=message.chat.id).first()):
                 new_user = User(username=message.from_user.first_name, chat_id=message.chat.id, city_name=message.text)
                 db.session.add(new_user)
@@ -125,41 +140,28 @@ def call_main_keyboard():
     return keyboard
 
 
-# @bot.callback_query_handler(func=lambda call: True)
-# def callback_query(call):
-#     pass
-
+# handle daily inline keyboard
 def gen_markup():
     markup = InlineKeyboardMarkup(row_width=4)
     # ✖️✔️
-    markup.add(InlineKeyboardButton("✖00:00", callback_data="0hr"),
-               InlineKeyboardButton("✖01:00", callback_data="1hr"),
-               InlineKeyboardButton("✖02:00", callback_data="2hr"),
-               InlineKeyboardButton("✖03:00", callback_data="3hr"),
-               InlineKeyboardButton("✖04:00", callback_data="4hr"),
-               InlineKeyboardButton("✖05:00", callback_data="5hr"),
-               InlineKeyboardButton("✖06:00", callback_data="6hr"),
-               InlineKeyboardButton("✖07:00", callback_data="7hr"),
-               InlineKeyboardButton("✖08:00", callback_data="8hr"),
-               InlineKeyboardButton("✖09:00", callback_data="9hr"),
-               InlineKeyboardButton("✖10:00", callback_data="10hr"),
-               InlineKeyboardButton("✖11:00", callback_data="11hr"),
-               InlineKeyboardButton("✖12:00", callback_data="12hr"),
-               InlineKeyboardButton("✖13:00", callback_data="13hr"),
-               InlineKeyboardButton("✖14:00", callback_data="14hr"),
-               InlineKeyboardButton("✖15:00", callback_data="15hr"),
-               InlineKeyboardButton("✖16:00", callback_data="16hr"),
-               InlineKeyboardButton("✖17:00", callback_data="17hr"),
-               InlineKeyboardButton("✖18:00", callback_data="18hr"),
-               InlineKeyboardButton("✖19:00", callback_data="19hr"),
-               InlineKeyboardButton("✖20:00", callback_data="20hr"),
-               InlineKeyboardButton("✖21:00", callback_data="21hr"),
-               InlineKeyboardButton("✖22:00", callback_data="22hr"),
-               InlineKeyboardButton("✖23:00", callback_data="23hr"),
-               )
+    markup.add(
+        InlineKeyboardButton("✖00:00", callback_data="0hr"), InlineKeyboardButton("✖01:00", callback_data="1hr"),
+        InlineKeyboardButton("✖02:00", callback_data="2hr"), InlineKeyboardButton("✖03:00", callback_data="3hr"),
+        InlineKeyboardButton("✖04:00", callback_data="4hr"), InlineKeyboardButton("✖05:00", callback_data="5hr"),
+        InlineKeyboardButton("✖06:00", callback_data="6hr"), InlineKeyboardButton("✖07:00", callback_data="7hr"),
+        InlineKeyboardButton("✖08:00", callback_data="8hr"), InlineKeyboardButton("✖09:00", callback_data="9hr"),
+        InlineKeyboardButton("✖10:00", callback_data="10hr"), InlineKeyboardButton("✖11:00", callback_data="11hr"),
+        InlineKeyboardButton("✖12:00", callback_data="12hr"), InlineKeyboardButton("✖13:00", callback_data="13hr"),
+        InlineKeyboardButton("✖14:00", callback_data="14hr"), InlineKeyboardButton("✖15:00", callback_data="15hr"),
+        InlineKeyboardButton("✖16:00", callback_data="16hr"), InlineKeyboardButton("✖17:00", callback_data="17hr"),
+        InlineKeyboardButton("✖18:00", callback_data="18hr"), InlineKeyboardButton("✖19:00", callback_data="19hr"),
+        InlineKeyboardButton("✖20:00", callback_data="20hr"), InlineKeyboardButton("✖21:00", callback_data="21hr"),
+        InlineKeyboardButton("✖22:00", callback_data="22hr"), InlineKeyboardButton("✖23:00", callback_data="23hr"),
+    )
     return markup
 
 
+# handle daily inline keyboard
 @bot.callback_query_handler(func=lambda call: True)
 def callback_inline(call):
     if call.data == "back_to_hours":
@@ -181,6 +183,5 @@ def callback_inline(call):
 
 
 if __name__ == '__main__':
+    # set_webhook()
     server.run(threaded=True, host=SERVER_IP, port=PORT, debug=DEBUG)
-    set_webhook()
-    # bot.remove_webhook()

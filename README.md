@@ -75,7 +75,7 @@ Set `DEBUG = True` in settings.py
 Download Ngrok from the link `https://ngrok.com/download`.
 Carry out the following steps:
 
-`$ ngroke http 8443`
+`$ ngrok http 8443`
 
 Create a variable `NGROK_DEPLOY_DOMAIN = ""` in `credentials.py`  (created when deployed to Heroku)
 and insert the specified address in quotes
