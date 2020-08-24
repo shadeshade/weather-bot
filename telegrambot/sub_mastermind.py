@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 CUR_PATH = os.path.realpath(__file__)
 BASE_DIR = os.path.dirname(os.path.dirname(CUR_PATH))
 DATA_DIR = os.path.join(BASE_DIR, 'data')
-STATIC_DIR = os.path.join(BASE_DIR, 'statics')
+STATIC_DIR = os.path.join(BASE_DIR, 'static')
 
 
 def get_cities_data():

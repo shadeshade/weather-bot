@@ -37,9 +37,7 @@ def get_daily(city_name, ):
 
 def get_start(first_name):
     """returns greeting and a short navigate information"""
-    welcome_text = 'Hello, ' + first_name + ' !\n'
-    text = welcome_text + 'Write down your location 🌏 \n' \
-                          'For more options use /help'
+    text = f'<b>Hello, {first_name} !\nWrite down your location</b> 🌏 \n\nFor more options use /help'
     return text
 
 

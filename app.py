@@ -65,7 +65,7 @@ def get_update():
 @bot.message_handler(commands=['start'])
 def command_start(message, ):
     response = get_start(message.from_user.first_name)
-    return bot.send_message(message.chat.id, text=response, reply_markup=call_main_keyboard())
+    return bot.send_message(message.chat.id, text=response, reply_markup=call_main_keyboard(), parse_mode='html')
 
 
 # Handle '/help'
@@ -118,7 +118,9 @@ def respond(message):
         bot.send_message(chat_id=message.chat.id, text=response, )
         return 'ok', 200
     elif message.sticker:
-        response = ' 😈 '
+        sticker = open('static/AnimatedSticker.tgs', 'rb')
+        bot.send_sticker(message.chat.id, sticker)
+        return 'ok', 200
     else:
         response = get_response(message.text)
         if 'Try again' not in response:

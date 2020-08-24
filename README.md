@@ -80,6 +80,6 @@ Carry out the following steps:
 Create a variable `NGROK_DEPLOY_DOMAIN = ""` in `credentials.py`  (created when deployed to Heroku)
 and insert the specified address in quotes
 
-![Image](statics/NgrokCapture.PNG)
+![Image](static/NgrokCapture.PNG)
 
 Now you can run `app.py` 
