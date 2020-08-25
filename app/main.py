@@ -3,41 +3,23 @@ from time import sleep
 
 import telebot
 from apscheduler.schedulers.background import BackgroundScheduler
-from flask import Flask, request
-from flask_sqlalchemy import SQLAlchemy
-from telebot import types
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+from flask import request
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
 
-from telegrambot.credentials import *
-from telegrambot.mastermind import *
-from telegrambot.settings import *
+from app import server, db, bot
+from app.telegrambot.credentials import HEROKU_DEPLOY_DOMAIN, NGROK_DEPLOY_DOMAIN, TOKEN
+from app.telegrambot.mastermind import *
+from app.telegrambot.models import User
+from app.telegrambot.settings import DEBUG
 
-# from telegrambot.models import User
+# bot = telebot.TeleBot(TOKEN)
 
-bot = telebot.TeleBot(TOKEN)
+scheduler = BackgroundScheduler()
 
 logging.basicConfig(filename='log.log',
                     level=logging.DEBUG,
                     filemode='w')
 telebot.logger.setLevel(logging.DEBUG)
-
-server = Flask(__name__)
-
-server.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-server.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///bot.db'
-db = SQLAlchemy(server)
-
-scheduler = BackgroundScheduler()
-
-
-class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(32), unique=True, nullable=False)
-    chat_id = db.Column(db.Integer, unique=True, nullable=False)
-    city_name = db.Column(db.String(20), )
-
-    def __repr__(self):
-        return f"User('{self.username}', '{self.chat_id}', '{self.city_name}')"
 
 
 @server.route('/setwebhook', methods=['GET', 'POST'])
@@ -83,7 +65,7 @@ def command_daily(message):
     if not bool(User.query.filter_by(chat_id=message.chat.id).first()):
         return bot.send_message(message.chat.id, text='No city name was set up', )
     set_daily(message.chat.id)
-    response = 'Schedule was set up'
+    response = 'Set the time'
     return bot.send_message(message.chat.id, text=response, reply_markup=gen_markup())
 
 
@@ -133,10 +115,10 @@ def respond(message):
 
 
 def call_main_keyboard():
-    keyboard = types.ReplyKeyboardMarkup(one_time_keyboard=False, resize_keyboard=True)
-    btn1 = types.KeyboardButton('Погода')
-    btn2 = types.KeyboardButton('⁉ Помощь')
-    btn3 = types.KeyboardButton('🌅 Ежедневно')
+    keyboard = ReplyKeyboardMarkup(one_time_keyboard=False, resize_keyboard=True)
+    btn1 = KeyboardButton('Погода')
+    btn2 = KeyboardButton('⁉ Помощь')
+    btn3 = KeyboardButton('🌅 Ежедневно')
     keyboard.add(btn1, btn2, )
     keyboard.add(btn3)
     return keyboard
@@ -183,7 +165,13 @@ def callback_inline(call):
         bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="Set the time",
                               reply_markup=markup)
 
-
-if __name__ == '__main__':
-    # set_webhook()
-    server.run(threaded=True, host=SERVER_IP, port=PORT, debug=DEBUG)
+# @bot.callback_query_handler(func=lambda call: True)
+# def callback_end(call):
+#     mins = ["0min", "10min", "20min", "30min", "40min", "50min"]
+#     if call.data in mins:
+#         # remove inline buttons
+#         bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
+#                               text="Schedule was set up", reply_markup=None)
+#         # show alert
+#         bot.answer_callback_query(callback_query_id=call.id, show_alert=False,
+#                               text="ЭТО ТЕСТОВОЕ УВЕДОМЛЕНИЕ!!11")

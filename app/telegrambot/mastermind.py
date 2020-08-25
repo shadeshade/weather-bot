@@ -1,4 +1,4 @@
-from telegrambot.sub_mastermind import *
+from app.telegrambot.sub_mastermind import *
 
 
 def get_response(city_name):

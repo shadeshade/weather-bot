@@ -11,7 +11,7 @@ STATIC_DIR = os.path.join(BASE_DIR, 'static')
 
 
 def get_cities_data():
-    '''return the cities_db dictionary'''
+    """return the cities_db dictionary"""
     with open(os.path.join(DATA_DIR, 'cities_db.json'), 'r', encoding='utf-8') as f:
         cities_data = json.load(f)
     content = {'cities_data': cities_data}
@@ -19,7 +19,7 @@ def get_cities_data():
 
 
 def transliterate_name(city_to_translit):
-    '''transliterate a city name for the get_response function in case the name is not in the cities_db'''
+    """transliterate a city name for the get_response function in case the name is not in the cities_db"""
     if city_to_translit.title() in get_cities_data()['cities_data']:
         return get_cities_data()['cities_data'][city_to_translit.title()]
     else:
@@ -33,7 +33,7 @@ def transliterate_name(city_to_translit):
 
 
 def get_weather_info(city_name):
-    '''return the current weather info'''
+    """return the current weather info"""
     source = requests.get('https://yandex.ru/pogoda/' + city_name)
     soup = BeautifulSoup(source.content, 'html.parser')
 
@@ -88,7 +88,7 @@ def get_weather_info(city_name):
 
 
 def get_extended_info(city_name):
-    '''return the extended weather info of the current day'''
+    """return the extended weather info of the current day"""
     source = requests.get('https://yandex.ru/pogoda/' + city_name + '/details')
     soup = BeautifulSoup(source.content, 'html.parser')
     weather_table = soup.find('table', attrs={'class': 'weather-table'})

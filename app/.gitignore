@@ -1,4 +1,4 @@
-venv
+../venv
 /shade-weather-telegram-bot/
 /.idea
 __pycache__
@@ -6,7 +6,7 @@ credentials.py
 weather.py
 scratch.py
 ngrok.exe
-/.env
-/bot.db
-/log.log
-/111.py
+/app/.env
+/app/bot.db
+/app/log.log
+/app/111.py
