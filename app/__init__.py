@@ -4,7 +4,6 @@ from flask_sqlalchemy import SQLAlchemy
 
 from app.telegrambot.credentials import TOKEN
 
-
 server = Flask(__name__)
 
 server.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -13,3 +12,4 @@ db = SQLAlchemy(server)
 bot = telebot.TeleBot(TOKEN)
 
 from app import main
+
