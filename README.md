@@ -11,8 +11,13 @@
 
 # Installation
 
-Open the repository in development environment.
-* install requirements
+* Open the repository in development environment.
+
+`git clone "https://github.com/shadeshade/weather_bot.git"`
+
+`cd weather_bot`
+
+* Install requirements
 
  `$ pip install requirements.txt`
 
