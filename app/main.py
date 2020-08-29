@@ -15,14 +15,12 @@ from app.telegrambot.settings import DEBUG
 
 sched = BackgroundScheduler()
 
+logging.basicConfig(level=logging.INFO)
 
-# logging.basicConfig(level=logging.INFO)
-
-
-# logging.basicConfig(filename='log.log',
-#                     level=logging.INFO,
-#                     filemode='w')
-# telebot.logger.setLevel(logging.INFO)
+logging.basicConfig(filename='log.log',
+                    level=logging.INFO,
+                    filemode='w')
+telebot.logger.setLevel(logging.INFO)
 
 
 @server.route('/setwebhook', methods=['GET', 'POST'])
@@ -75,15 +73,25 @@ def command_daily(message):
 
 # Handle '/daily' (setting a daily reminder)
 def set_daily(user_id):
-    # sched.remove_all_jobs()
+    import datetime
+    from apscheduler.jobstores.base import BaseJobStore
     # sched.add_job(daily_info, trigger='interval', seconds=5, args=[chat_id])
     user = User.query.filter_by(id=user_id).first()
     hours = user.reminder_time[-1].hours
     minutes = user.reminder_time[-1].minutes
-    sched.add_job(daily_info, trigger='cron', hour=hours, minute=minutes, args=[user_id])
-    print(sched.state)
+    job_id = f'{user.chat_id}{hours}{minutes}'
+
+    sched.print_jobs()
+    sched.add_job(daily_info, trigger='cron', hour=hours, minute=minutes, args=[user_id], id=job_id)
+    sched.print_jobs()
+    sched.remove_job(job_id=job_id)
+
     if sched.state == 0:
         sched.start()
+
+
+def command_remove_daily(user_id):
+    pass
 
 
 # Handle '/daily' (sending a reminder)
@@ -116,6 +124,7 @@ def respond(message):
                 new_user = User(username=message.from_user.first_name, chat_id=message.chat.id, city_name=message.text)
                 db.session.add(new_user)
                 db.session.commit()
+                # db.session.close()
     bot.send_message(chat_id=message.chat.id, text=response, )
     return 'ok', 200
 
@@ -165,6 +174,7 @@ def callback_inline(call):
     new_reminder = ReminderTime(hours=reminder_hours, user_id=user_id)
     db.session.add(new_reminder)
     db.session.commit()
+    # db.session.close()
 
     markup = InlineKeyboardMarkup(row_width=3)
     markup.add(InlineKeyboardButton("✖00:00", callback_data="0min"),
@@ -190,15 +200,27 @@ def callback_inline(call):
     user_id = user_id.id
 
     reminder_minutes = call.data[:-3]
-    reminder = ReminderTime.query.filter_by(user_id=user_id, minutes=None).first()
-    reminder.minutes = reminder_minutes
-    db.session.add(reminder)
-    db.session.commit()
+    new_reminder = ReminderTime.query.filter_by(user_id=user_id, minutes=None).order_by(ReminderTime.id.desc()).first()
+
+    check_reminder_hours = new_reminder.hours
+
+
+    existing_reminder = ReminderTime.query.filter_by(user_id=user_id, hours=check_reminder_hours,
+                                                         minutes=reminder_minutes).first()
+    if existing_reminder is not None:
+        # db.session.close()
+        print('already exists')
+    else:
+        new_reminder.minutes = reminder_minutes
+        db.session.add(new_reminder)
+        db.session.commit()
+    # db.session.close()
+
     bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
                           text="Schedule was set up", reply_markup=None)  # remove inline buttons
     bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text="ЭТО ТЕСТОВОЕ УВЕДОМЛЕНИЕ!!11")
-    set_daily(user_id)
 
+    set_daily(user_id)
 
 # handle back button
 @bot.callback_query_handler(func=lambda call: call.data == "back_to_hours")

@@ -17,7 +17,7 @@
 
 `cd weather_bot`
 
-* Install requirements
+* Install requirements.
 
  `$ pip install requirements.txt`
 
