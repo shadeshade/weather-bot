@@ -4,11 +4,11 @@ from flask_sqlalchemy import SQLAlchemy
 
 from app.telegrambot.credentials import TOKEN
 
-server = Flask(__name__)
+app = Flask(__name__)
 
-server.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
-server.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///bot.db'
-db = SQLAlchemy(server)
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///bot.db'
+db = SQLAlchemy(app)
 bot = telebot.TeleBot(TOKEN)
 
 from app import main

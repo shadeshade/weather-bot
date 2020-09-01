@@ -20,6 +20,7 @@ class ReminderTime(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     hours = db.Column(db.Integer)
     minutes = db.Column(db.Integer)
+    job_id = db.Column(db.Integer)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
     def __repr__(self):
