@@ -133,7 +133,7 @@ def daily_info(user_id):
 # Handle all other messages with content_type 'sticker' and 'text' (content_types defaults to ['text'])
 @bot.message_handler(content_types=["sticker", "text"])
 def respond(message):
-    if message.text == 'Погода':
+    if message.text == '🧙🏻‍♀ Погода сейчас':
         cur_user = User.query.filter_by(chat_id=message.chat.id).first()
         try:
             response = get_response(cur_user.city_name)
@@ -141,6 +141,17 @@ def respond(message):
             response = 'Write down your location'
         bot.send_message(chat_id=message.chat.id, text=response, )
         return 'ok', 200
+    elif message.text == '🧙🏼 На завтра':
+        cur_user = User.query.filter_by(chat_id=message.chat.id).first()
+        city_name = cur_user.city_name
+        response = get_next_day(city_name)
+    elif message.text == '🧙🏿‍♂ На неделю':
+        cur_user = User.query.filter_by(chat_id=message.chat.id).first()
+        city_name = cur_user.city_name
+        response = get_next_week(city_name)
+        pass
+    elif message.text == '🔮 Настройки':
+        pass
     elif message.sticker:
         sticker = open('static/AnimatedSticker.tgs', 'rb')
         bot.send_sticker(message.chat.id, sticker)
@@ -159,11 +170,14 @@ def respond(message):
 # handle main keyboard
 def call_main_keyboard():
     keyboard = ReplyKeyboardMarkup(one_time_keyboard=False, resize_keyboard=True)
-    btn1 = KeyboardButton('Погода')
-    btn2 = KeyboardButton('⁉ Помощь')
-    btn3 = KeyboardButton('🌅 По графику')
-    keyboard.add(btn1, btn2, )
-    keyboard.add(btn3)
+    btn1 = KeyboardButton('🧙🏻‍♀ Погода сейчас')
+    btn2 = KeyboardButton('🧙🏼 На завтра')
+    btn3 = KeyboardButton('🧙🏿‍♂ На неделю')
+    btn4 = KeyboardButton('🔮 Настройки')
+    # btn2 = KeyboardButton('⁉ Помощь')
+    # btn3 = KeyboardButton('🌅 По графику')
+    keyboard.add(btn1, btn2,  )
+    keyboard.add(btn3, btn4, )
     return keyboard
 
 
@@ -270,3 +284,19 @@ def callback_inline(call):
 
     bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="menu",
                           reply_markup=gen_markup())
+
+
+# handle settings button
+# @bot.callback_query_handler(func=lambda call: call.data == "settings")
+# def callback_inline(call):
+#     user_id = User.query.filter_by(chat_id=call.from_user.id).first()
+#     user_id = user_id.id
+#
+#     reminder = ReminderTime.query.filter_by(minutes=None, user_id=user_id).first()
+#     db.session.delete(reminder)
+#     db.session.commit()
+#
+#     bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="menu",
+#                           reply_markup=gen_markup())
+
+
