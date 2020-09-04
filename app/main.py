@@ -1,4 +1,3 @@
-import logging
 from time import sleep
 
 import telebot
@@ -13,15 +12,7 @@ from app.telegrambot.mastermind import *
 from app.telegrambot.models import User, ReminderTime
 from app.telegrambot.settings import DEBUG
 
-sched = BackgroundScheduler(daemon=True)
-
-
-# logging.basicConfig(level=logging.DEBUG)
-#
-# logging.basicConfig(filename='log.log',
-#                     level=logging.DEBUG,
-#                     filemode='w')
-# telebot.logger.setLevel(logging.DEBUG)
+sched = BackgroundScheduler()
 
 
 @app.route('/setwebhook', methods=['GET', 'POST'])
@@ -50,7 +41,7 @@ def get_update():
 @bot.message_handler(commands=['start'])
 def command_start(message, ):
     response = get_start(message.from_user.first_name)
-    return bot.send_message(message.chat.id, text=response, reply_markup=call_main_keyboard(), parse_mode='html')
+    bot.send_message(message.chat.id, text=response, reply_markup=call_main_keyboard(), parse_mode='html')
 
 
 # Handle '/help'
@@ -58,11 +49,40 @@ def command_start(message, ):
 @bot.message_handler(commands=['help'])
 def command_help(message, ):
     response = get_help()
-    return bot.send_message(message.chat.id, text=response, )
+    bot.send_message(message.chat.id, text=response, )
+
+
+# Handle 'погода сейчас'
+@bot.message_handler(func=lambda message: message.text == '🧙🏻‍♀ Погода сейчас')
+def button_weather_now(message, ):
+    cur_user = User.query.filter_by(chat_id=message.chat.id).first()
+    try:
+        response = get_response(cur_user.city_name)
+    except:
+        response = 'Write down your location'
+    bot.send_message(chat_id=message.chat.id, text=response, )
+
+
+# Handle 'погода сейчас'
+@bot.message_handler(func=lambda message: message.text == '🧙🏼 На завтра')
+def button_tomorrow(message, ):
+    cur_user = User.query.filter_by(chat_id=message.chat.id).first()
+    city_name = cur_user.city_name
+    response = get_next_day(city_name)
+    bot.send_message(chat_id=message.chat.id, text=response, )
+
+
+# Handle 'погода сейчас'
+@bot.message_handler(func=lambda message: message.text == '🧙🏿‍♂ На неделю')
+def button_tomorrow(message, ):
+    cur_user = User.query.filter_by(chat_id=message.chat.id).first()
+    city_name = cur_user.city_name
+    response = get_next_week(city_name)
+    bot.send_message(chat_id=message.chat.id, text=response, )
 
 
 # Handle '/daily'
-@bot.message_handler(func=lambda message: message.text == '🌅 По графику')
+@bot.message_handler(func=lambda message: message.text == '👨🏻‍🔬 По графику')
 @bot.message_handler(commands=['daily'])
 def command_daily(message):
     if not bool(User.query.filter_by(chat_id=message.chat.id).first()):
@@ -75,7 +95,7 @@ def command_daily(message):
             db.session.commit()
 
     response = 'Set the time'
-    return bot.send_message(message.chat.id, text=response, reply_markup=gen_markup())
+    bot.send_message(message.chat.id, text=response, reply_markup=gen_markup_daily())
 
 
 # Handle '/daily' (setting a daily reminder)
@@ -101,21 +121,9 @@ def set_daily(new_reminder, hours, minutes, ):
 def remove_daily(job_id):
     sched.remove_job(job_id=job_id)
 
-    print("deleted")
-    sched.print_jobs()
-    print('end')
-
 
 def back_up_reminders():
-    print("backing up")
-    sched.print_jobs()
-    print('backing up end')
-
     sched.remove_all_jobs()
-
-    print( 'removing' )
-    sched.print_jobs()
-    print('removing end')
 
     reminders = ReminderTime.query.all()
     for reminder in reminders:
@@ -127,35 +135,44 @@ def daily_info(user_id):
     user = User.query.filter_by(id=user_id).first()
     city_name = user.city_name
     response = get_daily(city_name)
-    return bot.send_message(user.chat_id, text=response, )
+    bot.send_message(user.chat_id, text=response, )
+
+
+# Handle button 'phenomena'
+@bot.message_handler(func=lambda message: message.text == '🌩 События')
+def button_phenomena(message, ):
+    response = 'события'
+    bot.send_message(message.chat.id, text=response, )
+
+# Handle button 'city'
+@bot.message_handler(func=lambda message: message.text == '🌆 Город')
+def button_city(message, ):
+    response = 'город'
+    bot.send_message(message.chat.id, text=response, )
+
+
+# Handle button 'language'
+@bot.message_handler(func=lambda message: message.text == '🇬🇧 Язык')
+def button_language(message, ):
+    response = 'lang'
+    bot.send_message(message.chat.id, text=response, )
 
 
 # Handle all other messages with content_type 'sticker' and 'text' (content_types defaults to ['text'])
 @bot.message_handler(content_types=["sticker", "text"])
 def respond(message):
-    if message.text == '🧙🏻‍♀ Погода сейчас':
-        cur_user = User.query.filter_by(chat_id=message.chat.id).first()
-        try:
-            response = get_response(cur_user.city_name)
-        except:
-            response = 'Write down your location'
-        bot.send_message(chat_id=message.chat.id, text=response, )
-        return 'ok', 200
-    elif message.text == '🧙🏼 На завтра':
-        cur_user = User.query.filter_by(chat_id=message.chat.id).first()
-        city_name = cur_user.city_name
-        response = get_next_day(city_name)
-    elif message.text == '🧙🏿‍♂ На неделю':
-        cur_user = User.query.filter_by(chat_id=message.chat.id).first()
-        city_name = cur_user.city_name
-        response = get_next_week(city_name)
-        pass
-    elif message.text == '🔮 Настройки':
-        pass
+    # if message.text == '🧙🏿‍♂ На неделю':
+    #     cur_user = User.query.filter_by(chat_id=message.chat.id).first()
+    #     city_name = cur_user.city_name
+    #     response = get_next_week(city_name)
+    #     pass
+    if message.text == '🔮 Настройки':
+        return bot.send_message(message.chat.id, text='Настройки', reply_markup=call_settings_keyboard())
+    elif message.text == '↩ Назад':
+        return bot.send_message(message.chat.id, text='Главное меню', reply_markup=call_main_keyboard())
     elif message.sticker:
-        sticker = open('static/AnimatedSticker.tgs', 'rb')
-        bot.send_sticker(message.chat.id, sticker)
-        return 'ok', 200
+        sticker = open('app/static/AnimatedSticker.tgs', 'rb')
+        return bot.send_sticker(message.chat.id, sticker)
     else:
         response = get_response(message.text)
         if 'Try again' not in response:
@@ -174,15 +191,30 @@ def call_main_keyboard():
     btn2 = KeyboardButton('🧙🏼 На завтра')
     btn3 = KeyboardButton('🧙🏿‍♂ На неделю')
     btn4 = KeyboardButton('🔮 Настройки')
-    # btn2 = KeyboardButton('⁉ Помощь')
-    # btn3 = KeyboardButton('🌅 По графику')
-    keyboard.add(btn1, btn2,  )
+    keyboard.add(btn1, btn2, )
     keyboard.add(btn3, btn4, )
     return keyboard
 
 
+# handle daily inline keyboard (settings)
+def call_settings_keyboard():
+    keyboard = ReplyKeyboardMarkup(one_time_keyboard=False, resize_keyboard=True)
+    btn1 = KeyboardButton('👨🏻‍🔬 По графику')
+    btn2 = KeyboardButton('🌩 События')
+    btn3 = KeyboardButton('🌆 Город')
+    btn4 = KeyboardButton('🇬🇧 Язык')
+    btn5 = KeyboardButton('⁉ Помощь')
+    btn6 = KeyboardButton('↩ Назад')
+
+    keyboard.add(btn1, btn2, )
+    keyboard.add(btn3, btn4, )
+    keyboard.add(btn5, )
+    keyboard.add(btn6)
+    return keyboard
+
+
 # handle daily inline keyboard (hours)
-def gen_markup():
+def gen_markup_daily():
     markup = InlineKeyboardMarkup(row_width=4)
     # ✖️✔️
     markup.add(
@@ -283,8 +315,7 @@ def callback_inline(call):
     db.session.commit()
 
     bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="menu",
-                          reply_markup=gen_markup())
-
+                          reply_markup=gen_markup_daily())
 
 # handle settings button
 # @bot.callback_query_handler(func=lambda call: call.data == "settings")
@@ -298,5 +329,3 @@ def callback_inline(call):
 #
 #     bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="menu",
 #                           reply_markup=gen_markup())
-
-

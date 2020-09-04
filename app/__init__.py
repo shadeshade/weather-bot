@@ -12,4 +12,3 @@ db = SQLAlchemy(app)
 bot = telebot.TeleBot(TOKEN)
 
 from app import main
-
