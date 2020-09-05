@@ -44,15 +44,14 @@ def command_start(message, ):
     bot.send_message(message.chat.id, text=response, reply_markup=call_main_keyboard(), parse_mode='html')
 
 
-# Handle '/help'
+# Handle button 'help'
 @bot.message_handler(func=lambda message: message.text == '⁉ Помощь')
-@bot.message_handler(commands=['help'])
 def command_help(message, ):
     response = get_help()
     bot.send_message(message.chat.id, text=response, )
 
 
-# Handle 'погода сейчас'
+# Handle button 'weather now'
 @bot.message_handler(func=lambda message: message.text == '🧙🏻‍♀ Погода сейчас')
 def button_weather_now(message, ):
     cur_user = User.query.filter_by(chat_id=message.chat.id).first()
@@ -63,7 +62,7 @@ def button_weather_now(message, ):
     bot.send_message(chat_id=message.chat.id, text=response, )
 
 
-# Handle 'погода сейчас'
+# Handle button 'for tomorrow'
 @bot.message_handler(func=lambda message: message.text == '🧙🏼 На завтра')
 def button_tomorrow(message, ):
     cur_user = User.query.filter_by(chat_id=message.chat.id).first()
@@ -72,18 +71,24 @@ def button_tomorrow(message, ):
     bot.send_message(chat_id=message.chat.id, text=response, )
 
 
-# Handle 'погода сейчас'
+# Handle button 'language'
+@bot.message_handler(func=lambda message: message.text == '🇷🇺 Язык' or message.text ==  '🇬🇧 Language')
+def button_language(message, ):
+    response = 'Please, choose your language'
+    bot.send_message(chat_id=message.chat.id, text=response, reply_markup=gen_markup_language() )
+
+
+# Handle button 'for week'
 @bot.message_handler(func=lambda message: message.text == '🧙🏿‍♂ На неделю')
-def button_tomorrow(message, ):
+def button_week(message, ):
     cur_user = User.query.filter_by(chat_id=message.chat.id).first()
     city_name = cur_user.city_name
     response = get_next_week(city_name)
     bot.send_message(chat_id=message.chat.id, text=response, )
 
 
-# Handle '/daily'
+# Handle button 'daily'
 @bot.message_handler(func=lambda message: message.text == '👨🏻‍🔬 По графику')
-@bot.message_handler(commands=['daily'])
 def command_daily(message):
     if not bool(User.query.filter_by(chat_id=message.chat.id).first()):
         return bot.send_message(message.chat.id, text='No city name was set up', )
@@ -141,20 +146,15 @@ def daily_info(user_id):
 # Handle button 'phenomena'
 @bot.message_handler(func=lambda message: message.text == '🌩 События')
 def button_phenomena(message, ):
-    response = 'события'
-    bot.send_message(message.chat.id, text=response, )
+    response = 'Set a reminder about the incoming event you specified. ' \
+               'E.g. get notified that rain is expected tomorrow'
+    bot.send_message(message.chat.id, text=response, reply_markup=gen_markup_phenomena())
+
 
 # Handle button 'city'
 @bot.message_handler(func=lambda message: message.text == '🌆 Город')
 def button_city(message, ):
-    response = 'город'
-    bot.send_message(message.chat.id, text=response, )
-
-
-# Handle button 'language'
-@bot.message_handler(func=lambda message: message.text == '🇬🇧 Язык')
-def button_language(message, ):
-    response = 'lang'
+    response = 'Please, type your city'
     bot.send_message(message.chat.id, text=response, )
 
 
@@ -168,7 +168,7 @@ def respond(message):
     #     pass
     if message.text == '🔮 Настройки':
         return bot.send_message(message.chat.id, text='Настройки', reply_markup=call_settings_keyboard())
-    elif message.text == '↩ Назад':
+    elif message.text == '↩ Меню':
         return bot.send_message(message.chat.id, text='Главное меню', reply_markup=call_main_keyboard())
     elif message.sticker:
         sticker = open('app/static/AnimatedSticker.tgs', 'rb')
@@ -202,15 +202,42 @@ def call_settings_keyboard():
     btn1 = KeyboardButton('👨🏻‍🔬 По графику')
     btn2 = KeyboardButton('🌩 События')
     btn3 = KeyboardButton('🌆 Город')
-    btn4 = KeyboardButton('🇬🇧 Язык')
+    btn4 = KeyboardButton('🇷🇺 Язык')
     btn5 = KeyboardButton('⁉ Помощь')
-    btn6 = KeyboardButton('↩ Назад')
+    btn6 = KeyboardButton('↩ Меню')
 
     keyboard.add(btn1, btn2, )
     keyboard.add(btn3, btn4, )
     keyboard.add(btn5, )
     keyboard.add(btn6)
     return keyboard
+
+
+# handle phenomena inline keyboard
+def gen_markup_phenomena():
+    markup = InlineKeyboardMarkup(row_width=2)
+    markup.add(
+        InlineKeyboardButton("✖Сильный ветер", callback_data="strong wind"),
+        InlineKeyboardButton("✖Град", callback_data="hailstorm"),
+        InlineKeyboardButton("✖Ураган", callback_data="hurricane"),
+        InlineKeyboardButton("✖Гроза", callback_data="storm"),
+        InlineKeyboardButton("✖Дождь", callback_data="rain"),
+        InlineKeyboardButton("✖Сильный ливень", callback_data="heavy rain"),
+        InlineKeyboardButton("✖Туман", callback_data="fog"),
+        InlineKeyboardButton("✖Сильная жара", callback_data="intense heat"),
+        InlineKeyboardButton("✖Все явления", callback_data="all phenomena"),
+    )
+    return markup
+
+
+# handle lang inline keyboard
+def gen_markup_language():
+    markup = InlineKeyboardMarkup(row_width=2)
+    markup.add(
+        InlineKeyboardButton("✖English", callback_data="english"),
+        InlineKeyboardButton("✖Русский", callback_data="russian"),
+    )
+    return markup
 
 
 # handle daily inline keyboard (hours)

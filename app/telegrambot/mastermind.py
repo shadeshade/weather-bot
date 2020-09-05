@@ -212,7 +212,7 @@ def get_extended_info(city_name, command):
 
 def get_start(first_name):
     """returns greeting and a short navigate information"""
-    text = f'<b>Hello, {first_name} !\nWrite down your location</b> 🌏 \n\nFor more options use /help'
+    text = f'<b>Hello, {first_name} !\nPlease, type your location</b> 🌏 \n\nFor more options use /help'
     return text
 
 

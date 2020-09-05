@@ -4,7 +4,7 @@ from app.telegrambot.settings import SERVER_IP, PORT, DEBUG
 from app.main import back_up_reminders
 
 if __name__ == '__main__':
-    # set_webhook()
+    set_webhook()
     print("up")
     sched.print_jobs()
     print('end')
