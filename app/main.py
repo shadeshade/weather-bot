@@ -44,13 +44,6 @@ def command_start(message, ):
     bot.send_message(message.chat.id, text=response, reply_markup=call_main_keyboard(), parse_mode='html')
 
 
-# Handle button 'help'
-@bot.message_handler(func=lambda message: message.text == '⁉ Помощь')
-def command_help(message, ):
-    response = get_help()
-    bot.send_message(message.chat.id, text=response, )
-
-
 # Handle button 'weather now'
 @bot.message_handler(func=lambda message: message.text == '🧙🏻‍♀ Погода сейчас')
 def button_weather_now(message, ):
@@ -62,6 +55,7 @@ def button_weather_now(message, ):
     bot.send_message(chat_id=message.chat.id, text=response, )
 
 
+
 # Handle button 'for tomorrow'
 @bot.message_handler(func=lambda message: message.text == '🧙🏼 На завтра')
 def button_tomorrow(message, ):
@@ -71,13 +65,6 @@ def button_tomorrow(message, ):
     bot.send_message(chat_id=message.chat.id, text=response, )
 
 
-# Handle button 'language'
-@bot.message_handler(func=lambda message: message.text == '🇷🇺 Язык' or message.text ==  '🇬🇧 Language')
-def button_language(message, ):
-    response = 'Please, choose your language'
-    bot.send_message(chat_id=message.chat.id, text=response, reply_markup=gen_markup_language() )
-
-
 # Handle button 'for week'
 @bot.message_handler(func=lambda message: message.text == '🧙🏿‍♂ На неделю')
 def button_week(message, ):
@@ -85,6 +72,12 @@ def button_week(message, ):
     city_name = cur_user.city_name
     response = get_next_week(city_name)
     bot.send_message(chat_id=message.chat.id, text=response, )
+
+
+# Handle button 'settings'
+@bot.message_handler(func=lambda message: message.text == '🔮 Настройки')
+def button_week(message, ):
+    bot.send_message(message.chat.id, text='Настройки', reply_markup=call_settings_keyboard())
 
 
 # Handle button 'daily'
@@ -99,7 +92,7 @@ def command_daily(message):
             db.session.delete(reminder)
             db.session.commit()
 
-    response = 'Set the time'
+    response = 'Set daily time you want to receive weather information'
     bot.send_message(message.chat.id, text=response, reply_markup=gen_markup_daily())
 
 
@@ -123,24 +116,26 @@ def set_daily(new_reminder, hours, minutes, ):
         sched.start()
 
 
-def remove_daily(job_id):
-    sched.remove_job(job_id=job_id)
-
-
-def back_up_reminders():
-    sched.remove_all_jobs()
-
-    reminders = ReminderTime.query.all()
-    for reminder in reminders:
-        set_daily(reminder, reminder.hours, reminder.minutes)
-
-
 # Handle '/daily' (sending a reminder)
 def daily_info(user_id):
     user = User.query.filter_by(id=user_id).first()
     city_name = user.city_name
     response = get_daily(city_name)
     bot.send_message(user.chat_id, text=response, )
+
+
+# Handle '/daily'
+def remove_daily(job_id):
+    sched.remove_job(job_id=job_id)
+
+
+# Handle '/daily'
+def back_up_reminders():
+    sched.remove_all_jobs()
+
+    reminders = ReminderTime.query.all()
+    for reminder in reminders:
+        set_daily(reminder, reminder.hours, reminder.minutes)
 
 
 # Handle button 'phenomena'
@@ -154,23 +149,34 @@ def button_phenomena(message, ):
 # Handle button 'city'
 @bot.message_handler(func=lambda message: message.text == '🌆 Город')
 def button_city(message, ):
-    response = 'Please, type your city'
+    response = 'Please, type the name of your city'
     bot.send_message(message.chat.id, text=response, )
+
+
+# Handle button 'language'
+@bot.message_handler(func=lambda message: message.text == '🇷🇺 Язык' or message.text == '🇬🇧 Language')
+def button_language(message, ):
+    response = 'Please, choose your language'
+    bot.send_message(chat_id=message.chat.id, text=response, reply_markup=gen_markup_language())
+
+
+# Handle button 'help'
+@bot.message_handler(func=lambda message: message.text == '⁉ Помощь')
+def command_help(message, ):
+    response = get_help()
+    bot.send_message(message.chat.id, text=response, )
+
+
+# Handle button 'menu'
+@bot.message_handler(func=lambda message: message.text == '↩ Меню')
+def command_help(message, ):
+    bot.send_message(message.chat.id, text='Главное меню', reply_markup=call_main_keyboard())
 
 
 # Handle all other messages with content_type 'sticker' and 'text' (content_types defaults to ['text'])
 @bot.message_handler(content_types=["sticker", "text"])
 def respond(message):
-    # if message.text == '🧙🏿‍♂ На неделю':
-    #     cur_user = User.query.filter_by(chat_id=message.chat.id).first()
-    #     city_name = cur_user.city_name
-    #     response = get_next_week(city_name)
-    #     pass
-    if message.text == '🔮 Настройки':
-        return bot.send_message(message.chat.id, text='Настройки', reply_markup=call_settings_keyboard())
-    elif message.text == '↩ Меню':
-        return bot.send_message(message.chat.id, text='Главное меню', reply_markup=call_main_keyboard())
-    elif message.sticker:
+    if message.sticker:
         sticker = open('app/static/AnimatedSticker.tgs', 'rb')
         return bot.send_sticker(message.chat.id, sticker)
     else:
@@ -196,7 +202,7 @@ def call_main_keyboard():
     return keyboard
 
 
-# handle daily inline keyboard (settings)
+# handle settings inline keyboard
 def call_settings_keyboard():
     keyboard = ReplyKeyboardMarkup(one_time_keyboard=False, resize_keyboard=True)
     btn1 = KeyboardButton('👨🏻‍🔬 По графику')
@@ -230,7 +236,7 @@ def gen_markup_phenomena():
     return markup
 
 
-# handle lang inline keyboard
+# handle language inline keyboard
 def gen_markup_language():
     markup = InlineKeyboardMarkup(row_width=2)
     markup.add(
@@ -277,16 +283,17 @@ def callback_inline(call):
     # db.session.close()
 
     markup = InlineKeyboardMarkup(row_width=3)
-    markup.add(InlineKeyboardButton("✖00:00", callback_data="0min"),
+    markup.add(InlineKeyboardButton("✖00:00", callback_data="00min"),
                InlineKeyboardButton("✖00:10", callback_data="10min"),
                InlineKeyboardButton("✖00:20", callback_data="20min"),
                InlineKeyboardButton("✖00:30", callback_data="30min"),
                InlineKeyboardButton("✖00:40", callback_data="40min"),
                InlineKeyboardButton("✖00:50", callback_data="50min"),
-               InlineKeyboardButton("Back", callback_data="back_to_hours"),
+               InlineKeyboardButton("↩ Back", callback_data="back_to_hours"),
                )
 
-    bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="Set the time",
+    bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                          text="Set daily time you want to receive weather information",
                           reply_markup=markup)
 
 
@@ -294,7 +301,7 @@ def callback_inline(call):
 @bot.callback_query_handler(func=lambda call: 'min' in call.data)
 def callback_inline(call):
     """
-    writing minutes data to db and removing keyboard
+    writing minutes data to db
     """
     user_id = User.query.filter_by(chat_id=call.from_user.id).first()
     user_id = user_id.id
@@ -306,7 +313,7 @@ def callback_inline(call):
 
     existing_reminder = ReminderTime.query.filter_by(user_id=user_id, hours=reminder_hours,
                                                      minutes=reminder_minutes).first()
-    if existing_reminder is not None:  # checking if reminder exists
+    if existing_reminder is not None:  # if reminder exists
         reminder_job_id = existing_reminder.job_id
         db.session.delete(existing_reminder)
         db.session.commit()
@@ -318,6 +325,8 @@ def callback_inline(call):
                 db.session.commit()
 
         remove_daily(job_id=reminder_job_id)
+        return bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text="The time was deleted")
+
 
     else:  # if reminder does not exist
 
@@ -326,22 +335,28 @@ def callback_inline(call):
         db.session.commit()
         set_daily(new_reminder, reminder_hours, reminder_minutes, )
 
-    bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
-                          text="Schedule was set up", reply_markup=None)  # remove inline buttons
-    bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text="ЭТО ТЕСТОВОЕ УВЕДОМЛЕНИЕ!!11")
+    # bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
+    #                       text=f"Schedule was set up at {new_reminder.hours}:{new_reminder.minutes}")
+
+    bot.answer_callback_query(callback_query_id=call.id, show_alert=False,
+                              text=f"Schedule was set up at {reminder_hours}:{reminder_minutes}")
 
 
 # handle back button
 @bot.callback_query_handler(func=lambda call: call.data == "back_to_hours")
 def callback_inline(call):
-    user_id = User.query.filter_by(chat_id=call.from_user.id).first()
-    user_id = user_id.id
+    try:
+        user_id = User.query.filter_by(chat_id=call.from_user.id).first()
+        user_id = user_id.id
 
-    reminder = ReminderTime.query.filter_by(minutes=None, user_id=user_id).first()
-    db.session.delete(reminder)
-    db.session.commit()
+        reminder = ReminderTime.query.filter_by(minutes=None, user_id=user_id).first()
+        db.session.delete(reminder)
+        db.session.commit()
+    except:
+        pass
 
-    bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="menu",
+    bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                          text="Set daily time you want to receive weather information",
                           reply_markup=gen_markup_daily())
 
 # handle settings button

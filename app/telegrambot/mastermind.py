@@ -11,6 +11,12 @@ DATA_DIR = os.path.join(BASE_DIR, 'data')
 STATIC_DIR = os.path.join(BASE_DIR, 'static')
 
 
+def get_start(first_name):
+    """returns greeting and a short navigate information"""
+    text = f'<b>Hello, {first_name} !\nPlease, type your location</b> 🌏 \n\nFor more options use /help'
+    return text
+
+
 def get_response(city_name):
     """basic function"""
     transliterated_city = transliterate_name(city_name)
@@ -209,11 +215,6 @@ def get_extended_info(city_name, command):
 
     return daypart_dict
 
-
-def get_start(first_name):
-    """returns greeting and a short navigate information"""
-    text = f'<b>Hello, {first_name} !\nPlease, type your location</b> 🌏 \n\nFor more options use /help'
-    return text
 
 
 def get_help():
