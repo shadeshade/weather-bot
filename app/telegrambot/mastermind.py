@@ -11,6 +11,15 @@ DATA_DIR = os.path.join(BASE_DIR, 'data')
 STATIC_DIR = os.path.join(BASE_DIR, 'static')
 
 
+def get_condition(condition):
+    """"return the condition dictionary"""
+
+    with open(os.path.join(DATA_DIR, 'condition_emojis_db.json'), 'r', encoding='utf-8') as f:
+        cond_dict = json.load(f)
+        cond = cond_dict[condition.lower()]
+    return cond.title()
+
+
 def get_start(first_name):
     """returns greeting and a short navigate information"""
     text = f'<b>Hello, {first_name} !\nPlease, type your location</b> 🌏 \n\nFor more options use /help'
@@ -25,10 +34,10 @@ def get_response(city_name):
         weather_info = get_weather_info(transliterated_city)
     except:
         return 'Try again'
-
+    x = weather_info["condition"]
     response_message = f'{weather_info["temperature"]}°C,\n' \
                        f'{weather_info["wind_speed"]}\n' \
-                       f'{weather_info["condition"]}  ⛅\n' \
+                       f'{x}  {get_condition(x)}\n' \
                        f'Ощущается Как: {weather_info["feels_like"]}\n' \
                        f'Световой День: {weather_info["daylight_hours"]}\n' \
                        f'Восход - Закат: {weather_info["sunrise"]} - {weather_info["sunset"]}'
@@ -125,14 +134,15 @@ def get_next_week(city_name):
     """get next 7 day's weather info"""
     transliterated_city = transliterate_name(city_name)
     extended_info = get_extended_info(transliterated_city, 'week')
+    for day in extended_info.values():
+        for day_part in day.values():
+            weather_daypart = day_part['weather_daypart']
+            weather_daypart_temp = day_part['weather_daypart_temp']
+            weather_daypart_condition = day_part['weather_daypart_condition']
 
-    response_message = f'{extended_info["part1"]["weather_daypart"]},\n' \
-                       f'{extended_info["part1"]["weather_daypart_temp"]},\n' \
-                       f'{extended_info["part1"]["weather_daypart_condition"]},\n' \
-                       f'{extended_info["part1"]["weather_daypart_wind"]},\n' \
-                       f'{extended_info["part1"]["weather_daypart_direction"]},\n'
-
-    return response_message
+            response_message = f'{weather_daypart}: {weather_daypart_temp},\n' \
+                               f'{weather_daypart_condition},\n'
+            return response_message
 
 
 # daily info
@@ -156,12 +166,11 @@ def get_extended_info(city_name, command):
     source = requests.get('https://yandex.ru/pogoda/' + city_name + '/details')
     soup = BeautifulSoup(source.content, 'html.parser')
 
-    if command == 'daily':
+    if command == 'daily':  # button daily
         weather_table = soup.find('table', attrs={'class': 'weather-table'})
-    elif command == 'tomorrow':
+    elif command == 'tomorrow':  # button tomorrow
         weather_table = soup.find_all('table', attrs={'class': 'weather-table'})[1]
-    else:
-        # command == 'week'
+    else:  # button for a week
         days_dict = dict()
         day_count = 0
         weather_tables = soup.find_all('table', attrs={'class': 'weather-table'})
@@ -169,6 +178,9 @@ def get_extended_info(city_name, command):
             weather_rows = table.find_all('tr', attrs={'class': 'weather-table__row'})
             daypart_dict = dict()
             day_count += 1
+            if day_count > 7:
+                return days_dict
+
             row_count = 0
             for row in weather_rows:
                 weather_daypart = row.find('div', attrs={'class': 'weather-table__daypart'}).text
@@ -216,7 +228,6 @@ def get_extended_info(city_name, command):
     return daypart_dict
 
 
-
 def get_help():
     """returns commands list"""
     text = '/start:\nStart bot interaction.\n\n' \
@@ -229,30 +240,34 @@ def get_help():
     return text
 
 
-def get_cities_data():
+def get_cities_data(city):
     """return the cities_db dictionary"""
     with open(os.path.join(DATA_DIR, 'cities_db.json'), 'r', encoding='utf-8') as f:
         cities_data = json.load(f)
-    content = {'cities_data': cities_data}
+    content = cities_data[city]
     return content
 
 
 def transliterate_name(city_to_translit):
     """transliterate a city name for the get_response function in case the name is not in the cities_db"""
-    if city_to_translit.title() in get_cities_data()['cities_data']:
-        return get_cities_data()['cities_data'][city_to_translit.title()]
-    else:
-        try:
-            new_name = transliterate.translit(city_to_translit, reversed=True)
-            if 'х' in city_to_translit.lower():
-                new_name = new_name.lower().replace('h', 'kh')
-        except:
-            new_name = city_to_translit
-        return new_name
+    try:
+        city = get_cities_data(city_to_translit.title())
+        return city
+    except:
+        pass
+
+    try:
+        new_name = transliterate.translit(city_to_translit, reversed=True)
+        if 'х' in city_to_translit.lower():
+            new_name = new_name.lower().replace('h', 'kh')
+    except:
+        new_name = city_to_translit
+    return new_name
 
 
 if __name__ == '__main__':
     # print(get_daily('маха'))
     # print(get_response('Питер'))
     # get_scrap()
-    get_next_day('moscow')
+    # get_next_day('moscow')
+    get_condition('snow')

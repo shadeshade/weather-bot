@@ -51,9 +51,8 @@ def button_weather_now(message, ):
     try:
         response = get_response(cur_user.city_name)
     except:
-        response = 'Write down your location'
+        response = 'Please, type your location 🌏'
     bot.send_message(chat_id=message.chat.id, text=response, )
-
 
 
 # Handle button 'for tomorrow'
@@ -183,7 +182,8 @@ def respond(message):
         response = get_response(message.text)
         if 'Try again' not in response:
             if not bool(User.query.filter_by(chat_id=message.chat.id).first()):
-                new_user = User(username=message.from_user.first_name, chat_id=message.chat.id, city_name=message.text)
+                new_user = User(username=message.from_user.first_name, chat_id=message.chat.id, city_name=message.text,
+                                language=message.from_user.language_code)
                 db.session.add(new_user)
                 db.session.commit()
     bot.send_message(chat_id=message.chat.id, text=response, )

@@ -9,6 +9,7 @@ class User(db.Model):
     chat_id = db.Column(db.Integer, unique=True, nullable=False)
     city_name = db.Column(db.String(20), )
     reminder_time = db.relationship('ReminderTime', backref='telegram_user', lazy=True)
+    language = db.Column(db.String(2))
 
     def __repr__(self):
         return f"User('{self.username}', '{self.chat_id}', '{self.city_name}')"
