@@ -49,10 +49,10 @@ def command_start(message, ):
 def button_weather_now(message, ):
     cur_user = User.query.filter_by(chat_id=message.chat.id).first()
     try:
-        response = get_response(cur_user.city_name)
+        response = get_response(cur_user.city_name, cur_user.language)
     except:
         response = 'Please, type your location 🌏'
-    bot.send_message(chat_id=message.chat.id, text=response, )
+    bot.send_message(chat_id=message.chat.id, text=response, parse_mode='html')
 
 
 # Handle button 'for tomorrow'
@@ -179,15 +179,20 @@ def respond(message):
         sticker = open('app/static/AnimatedSticker.tgs', 'rb')
         return bot.send_sticker(message.chat.id, sticker)
     else:
-        response = get_response(message.text)
+        try:  # пока не используется, но возможно понадобится в дальнейшем
+            cur_user = User.query.filter_by(chat_id=message.chat.id).first()
+            response = get_response(message.text, cur_user.languagee)
+            return bot.send_message(chat_id=message.chat.id, text=response, parse_mode='html')
+        except:
+            response = get_response(message.text, message.from_user.language_code)
+
         if 'Try again' not in response:
             if not bool(User.query.filter_by(chat_id=message.chat.id).first()):
                 new_user = User(username=message.from_user.first_name, chat_id=message.chat.id, city_name=message.text,
                                 language=message.from_user.language_code)
                 db.session.add(new_user)
                 db.session.commit()
-    bot.send_message(chat_id=message.chat.id, text=response, )
-    return 'ok', 200
+        return bot.send_message(chat_id=message.chat.id, text=response, parse_mode='html')
 
 
 # handle main keyboard

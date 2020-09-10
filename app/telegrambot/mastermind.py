@@ -5,18 +5,22 @@ import requests
 import transliterate
 from bs4 import BeautifulSoup
 
+from app.data import emoji_condition_db
+
 CUR_PATH = os.path.realpath(__file__)
 BASE_DIR = os.path.dirname(os.path.dirname(CUR_PATH))
 DATA_DIR = os.path.join(BASE_DIR, 'data')
 STATIC_DIR = os.path.join(BASE_DIR, 'static')
 
 
-def get_condition(condition):
-    """"return the condition dictionary"""
 
-    with open(os.path.join(DATA_DIR, 'condition_emojis_db.json'), 'r', encoding='utf-8') as f:
-        cond_dict = json.load(f)
-        cond = cond_dict[condition.lower()]
+def get_condition(cond):
+    """"return the condition dictionary"""
+    try:
+        cond = emoji_condition_db.cond_emoji[cond.lower()]
+    except:
+        translated = emoji_condition_db.cond_trans_reversed[cond.lower()]
+        cond = emoji_condition_db.cond_emoji[translated.lower()]
     return cond.title()
 
 
@@ -26,30 +30,33 @@ def get_start(first_name):
     return text
 
 
-def get_response(city_name):
+def get_response(city_name, lang):
     """basic function"""
     transliterated_city = transliterate_name(city_name)
 
     try:
-        weather_info = get_weather_info(transliterated_city)
+        weather_info = get_weather_info(transliterated_city, lang)
     except:
         return 'Try again'
-    x = weather_info["condition"]
-    response_message = f'{weather_info["temperature"]}°C,\n' \
-                       f'{weather_info["wind_speed"]}\n' \
-                       f'{x}  {get_condition(x)}\n' \
-                       f'Ощущается Как: {weather_info["feels_like"]}\n' \
-                       f'Световой День: {weather_info["daylight_hours"]}\n' \
-                       f'Восход - Закат: {weather_info["sunrise"]} - {weather_info["sunset"]}'
+    cond = weather_info["condition"]
+    response_message = f'<b>{weather_info["temperature"]}°C</b>, ветер: <b>{weather_info["wind_speed"]} ' \
+                       f'{weather_info["wind_direction"]}</b>\n' \
+                       f'{cond}  {get_condition(cond,)}\n' \
+                       f'Ощущается как: <b>{weather_info["feels_like"]}</b>\n' \
+                       f'Световой день: <b>{weather_info["daylight_hours"]}</b>\n' \
+                       f'Восход - Закат: <b>{weather_info["sunrise"]} - {weather_info["sunset"]}</b>'
 
     return response_message
 
 
-def get_weather_info(city_name):
+def get_weather_info(city_name, lang):
     """return the current weather info"""
-    source = requests.get('https://yandex.ru/pogoda/' + city_name)
-    soup = BeautifulSoup(source.content, 'html.parser')
+    if lang == 'ru':
+        source = requests.get('https://yandex.ru/pogoda/' + city_name)
+    else:
+        source = requests.get('https://yandex.com/pogoda/' + city_name)
 
+    soup = BeautifulSoup(source.content, 'html.parser')
     weather_soup = soup.find('div', attrs={'class': 'fact'})
 
     # with open('scrabed_file.html', 'w', encoding='utf-8') as f:
@@ -64,7 +71,9 @@ def get_weather_info(city_name):
     wind_speed_and_direction = weather_soup.find('div', attrs={'class': 'fact__props'})
     try:
         wind_speed = wind_speed_and_direction.find('span', attrs={'class': 'wind-speed'}).text  # wind speed
-        wind_direction = wind_speed_and_direction.find('abbr')['title']  # wind direction
+        wind_direction = wind_speed_and_direction.find('span', attrs={'class': 'fact__unit'}).text  # wind unit, direct
+        # wind_direction = wind_speed_and_direction.find('abbr')['title']  # wind direction
+
     except:
         wind_speed = 'Штиль'
         wind_direction = ''
