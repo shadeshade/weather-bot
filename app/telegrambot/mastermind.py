@@ -1,5 +1,6 @@
 import json
 import os
+from typing import Dict
 
 import requests
 import transliterate
@@ -13,15 +14,14 @@ DATA_DIR = os.path.join(BASE_DIR, 'data')
 STATIC_DIR = os.path.join(BASE_DIR, 'static')
 
 
-
 def get_condition(cond):
-    """"return the condition dictionary"""
+    """"return emoji from the dictionary"""
     try:
-        cond = emoji_condition_db.cond_emoji[cond.lower()]
+        condition = emoji_condition_db.cond_emoji[cond.lower()]
     except:
         translated = emoji_condition_db.cond_trans_reversed[cond.lower()]
-        cond = emoji_condition_db.cond_emoji[translated.lower()]
-    return cond.title()
+        condition = emoji_condition_db.cond_emoji[translated.lower()]
+    return condition.title()
 
 
 def get_start(first_name):
@@ -36,15 +36,44 @@ def get_response(city_name, lang):
 
     try:
         weather_info = get_weather_info(transliterated_city, lang)
+        weather_rest_info = get_extended_info(transliterated_city, 'today', lang)  # type: Dict
     except:
         return 'Try again'
+
+    daypart_message = ''
+    for i in range(1, 5):
+        daypart_info = weather_rest_info["part" + str(i)]  # type: Dict[str, str]
+        daypart = daypart_info["weather_daypart"]
+        daypart_temp = daypart_info["weather_daypart_temp"]
+        daypart_cond = daypart_info["weather_daypart_condition"]
+        daypart_cond_emoji = get_condition(daypart_cond)
+        daypart_wind = daypart_info["weather_daypart_wind"]
+        daypart_wind_unit = daypart_info["weather_unit"]
+        daypart_wind_direct = daypart_info["weather_daypart_direction"]
+
+        daypart_message += f'{daypart.title()}: {daypart_temp}, {daypart_wind} {daypart_wind_unit}, {daypart_wind_direct}' \
+                           f' {daypart_cond_emoji}\n\n'
+
+    header = weather_info["header"]
+    temp = weather_info["temperature"]
+    wind_speed = weather_info["wind_speed"]
+    wind_direct = weather_info["wind_direction"]
     cond = weather_info["condition"]
-    response_message = f'<b>{weather_info["temperature"]}°C</b>, ветер: <b>{weather_info["wind_speed"]} ' \
-                       f'{weather_info["wind_direction"]}</b>\n' \
-                       f'{cond}  {get_condition(cond,)}\n' \
-                       f'Ощущается как: <b>{weather_info["feels_like"]}</b>\n' \
-                       f'Световой день: <b>{weather_info["daylight_hours"]}</b>\n' \
-                       f'Восход - Закат: <b>{weather_info["sunrise"]} - {weather_info["sunset"]}</b>'
+    cond_emoji = get_condition(cond)
+    feels_like = weather_info["feels_like"]
+    daylight_hours = weather_info["daylight_hours"]
+    sunrise = weather_info["sunrise"]
+    sunset = weather_info["sunset"]
+
+    message_part1 = f'<i>{header}</i>\n\n' \
+                    f'<b>Сейчас: {temp}°C, {cond}  {cond_emoji}\n' \
+                    f'ветер: {wind_speed} {wind_direct}, ' \
+                    f'ощущается как: {feels_like}</b> \n\n\n'
+
+    message_part2 = f'\nСветовой день: <b>{daylight_hours}</b>\n' \
+                    f'Восход - Закат: <b>{sunrise} - {sunset}</b>\n'
+
+    response_message = message_part1 + daypart_message + message_part2
 
     return response_message
 
@@ -53,20 +82,18 @@ def get_weather_info(city_name, lang):
     """return the current weather info"""
     if lang == 'ru':
         source = requests.get('https://yandex.ru/pogoda/' + city_name)
+
     else:
         source = requests.get('https://yandex.com/pogoda/' + city_name)
 
     soup = BeautifulSoup(source.content, 'html.parser')
     weather_soup = soup.find('div', attrs={'class': 'fact'})
 
-    # with open('scrabed_file.html', 'w', encoding='utf-8') as f:
-    #     f.write(soup.prettify())
+    header = weather_soup.find('div', attrs={'class': 'header-title'})
+    header = header.find('h1', attrs={'class': 'title'}).text
 
     temperature = weather_soup.find('div', attrs={'class': 'fact__temp-wrap'})
     temperature = temperature.find(attrs={'class': 'temp__value'}).text
-
-    image_src = weather_soup.find('div', attrs={'class': 'fact__temp-wrap'})
-    image_src = image_src.find('img', attrs={'class': 'icon'})['src']  # appropriate weather image
 
     wind_speed_and_direction = weather_soup.find('div', attrs={'class': 'fact__props'})
     try:
@@ -88,19 +115,14 @@ def get_weather_info(city_name, lang):
     feels_like = feels_like.find('div', attrs={'class': 'temp'}).text  # feels like temperature
 
     daylight_soup = soup.find('div', attrs={'class': 'sun-card__info'})
-
     daylight_hours = daylight_soup.find('div', attrs={
         'class': 'sun-card__day-duration-value'}).text  # daylight duration
     sunrise = daylight_soup.find('div', attrs={'class': 'sun-card__sunrise-sunset-info_value_rise-time'}).text[-5:]
     sunset = daylight_soup.find('div', attrs={'class': 'sun-card__sunrise-sunset-info_value_set-time'}).text[-5:]
 
-    # extended_weather_soup = soup.find('ul', attrs={'class': 'swiper-wrapper'})
-    # weather_time = extended_weather_soup.find('div', attrs={'class': 'fact__hour-label'}).text
-    # weather_temperature = extended_weather_soup.find('div', attrs={'class': 'fact__hour-temp'}).text
-
     response_message = {
+        'header': header,
         'temperature': temperature,
-        'image_src': image_src,
         'wind_speed': wind_speed,
         'wind_direction': wind_direction,
         'humidity': humidity,
@@ -113,36 +135,28 @@ def get_weather_info(city_name, lang):
     return response_message
 
 
-# temp
-def get_scrap():
-    source = requests.get('https://yandex.ru/pogoda/makhachkala/details')
-    soup = BeautifulSoup(source.content, 'html.parser')
-    weather_table = soup.find('table', attrs={'class': 'weather-table'})
-
-    with open(os.path.join(DATA_DIR, 'scraped.html'), 'w', encoding='utf-8') as f:
-        f.write(soup.prettify())
-
-    pass
-
-
-def get_next_day(city_name):
+def get_next_day(city_name, lang):
     """get tomorrow's weather info"""
     transliterated_city = transliterate_name(city_name)
-    extended_info = get_extended_info(transliterated_city, 'tomorrow')
+    extended_info = get_extended_info(transliterated_city, 'tomorrow', lang)  # type: Dict
 
-    response_message = f'{extended_info["part1"]["weather_daypart"]},\n' \
-                       f'{extended_info["part1"]["weather_daypart_temp"]},\n' \
-                       f'{extended_info["part1"]["weather_daypart_condition"]},\n' \
-                       f'{extended_info["part1"]["weather_daypart_wind"]},\n' \
-                       f'{extended_info["part1"]["weather_daypart_direction"]},\n'
+    response_message = ''
+    for i in range(1, 5):
+        daypart_info = extended_info["part" + str(i)]  # type: Dict[str, str]
+        cond = daypart_info["weather_daypart_condition"]
+
+        response_message += f'<b>{daypart_info["weather_daypart"].title()}</b>,' \
+                            f' {daypart_info["weather_daypart_temp"]}\n' \
+                            f'ветер: {daypart_info["weather_daypart_wind"]} {daypart_info["weather_unit"]}' \
+                            f' {cond} {get_condition(cond)}\n\n'
 
     return response_message
 
 
-def get_next_week(city_name):
+def get_next_week(city_name, lang):
     """get next 7 day's weather info"""
     transliterated_city = transliterate_name(city_name)
-    extended_info = get_extended_info(transliterated_city, 'week')
+    extended_info = get_extended_info(transliterated_city, 'week', lang)
     for day in extended_info.values():
         for day_part in day.values():
             weather_daypart = day_part['weather_daypart']
@@ -170,15 +184,24 @@ def get_daily(city_name, ):
     return response_message
 
 
-def get_extended_info(city_name, command):
+def get_extended_info(city_name, command, lang):
     """return the extended weather info of the current day for daily cast"""
-    source = requests.get('https://yandex.ru/pogoda/' + city_name + '/details')
+    if lang == 'ru':
+        source = requests.get('https://yandex.ru/pogoda/' + city_name + '/details')
+        weather_unit = 'м/с'
+    else:
+        source = requests.get('https://yandex.com/pogoda/' + city_name + '/details')
+        weather_unit = 'm/s'
+
+    # source = requests.get('https://yandex.ru/pogoda/' + city_name + '/details')
     soup = BeautifulSoup(source.content, 'html.parser')
 
     if command == 'daily':  # button daily
         weather_table = soup.find('table', attrs={'class': 'weather-table'})
     elif command == 'tomorrow':  # button tomorrow
         weather_table = soup.find_all('table', attrs={'class': 'weather-table'})[1]
+    elif command == 'today':
+        weather_table = soup.find_all('table', attrs={'class': 'weather-table'})[0]
     else:  # button for a week
         days_dict = dict()
         day_count = 0
@@ -218,7 +241,7 @@ def get_extended_info(city_name, command):
         weather_daypart_condition = row.find('td', attrs={'class': 'weather-table__body-cell_type_condition'}).text
         try:
             weather_daypart_wind = row.find('span', attrs={'class': 'weather-table__wind'}).text
-            weather_daypart_direction = row.find('abbr')['title']
+            weather_daypart_direction = row.find('abbr', attrs={'class': 'icon-abbr'}).text
         except:
             weather_daypart_wind = 'Штиль'
             weather_daypart_direction = ''
@@ -228,7 +251,8 @@ def get_extended_info(city_name, command):
             'weather_daypart_temp': weather_daypart_temp,
             'weather_daypart_condition': weather_daypart_condition,
             'weather_daypart_wind': weather_daypart_wind,
-            'weather_daypart_direction': weather_daypart_direction
+            'weather_daypart_direction': weather_daypart_direction,
+            'weather_unit': weather_unit
         }
         count += 1
         part_num = str(count)
