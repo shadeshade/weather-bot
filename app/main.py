@@ -59,9 +59,8 @@ def button_weather_now(message, ):
 @bot.message_handler(func=lambda message: message.text == '🧙🏼 На завтра')
 def button_tomorrow(message, ):
     cur_user = User.query.filter_by(chat_id=message.chat.id).first()
-    city_name = cur_user.city_name
-    response = get_next_day(city_name)
-    bot.send_message(chat_id=message.chat.id, text=response, )
+    response = get_next_day(cur_user.city_name, cur_user.language)
+    bot.send_message(chat_id=message.chat.id, text=response, parse_mode='html')
 
 
 # Handle button 'for week'
@@ -69,13 +68,13 @@ def button_tomorrow(message, ):
 def button_week(message, ):
     cur_user = User.query.filter_by(chat_id=message.chat.id).first()
     city_name = cur_user.city_name
-    response = get_next_week(city_name)
+    response = get_next_week(city_name, cur_user.language)
     bot.send_message(chat_id=message.chat.id, text=response, )
 
 
 # Handle button 'settings'
 @bot.message_handler(func=lambda message: message.text == '🔮 Настройки')
-def button_week(message, ):
+def button_settings(message, ):
     bot.send_message(message.chat.id, text='Настройки', reply_markup=call_settings_keyboard())
 
 
@@ -181,17 +180,20 @@ def respond(message):
     else:
         try:  # пока не используется, но возможно понадобится в дальнейшем
             cur_user = User.query.filter_by(chat_id=message.chat.id).first()
-            response = get_response(message.text, cur_user.languagee)
+            response = get_response(message.text, cur_user.language)
             return bot.send_message(chat_id=message.chat.id, text=response, parse_mode='html')
         except:
             response = get_response(message.text, message.from_user.language_code)
 
         if 'Try again' not in response:
-            if not bool(User.query.filter_by(chat_id=message.chat.id).first()):
+            # if not bool(User.query.filter_by(chat_id=message.chat.id).first()):
+            try:  # if user is not exists create new one
                 new_user = User(username=message.from_user.first_name, chat_id=message.chat.id, city_name=message.text,
                                 language=message.from_user.language_code)
                 db.session.add(new_user)
                 db.session.commit()
+            except:
+                pass
         return bot.send_message(chat_id=message.chat.id, text=response, parse_mode='html')
 
 
