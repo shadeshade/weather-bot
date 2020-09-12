@@ -140,7 +140,7 @@ def get_next_day(city_name, lang):
     transliterated_city = transliterate_name(city_name)
     extended_info = get_extended_info(transliterated_city, 'tomorrow', lang)  # type: Dict
 
-    response_message = ''
+    response_message = f'<i>{extended_info["weather_city"]} на {extended_info["weather_date"]}</i>\n\n'
     for i in range(1, 5):
         daypart_info = extended_info["part" + str(i)]  # type: Dict[str, str]
         cond = daypart_info["weather_daypart_condition"]
@@ -197,11 +197,11 @@ def get_extended_info(city_name, command, lang):
     soup = BeautifulSoup(source.content, 'html.parser')
 
     if command == 'daily':  # button daily
-        weather_table = soup.find('table', attrs={'class': 'weather-table'})
+        weather_table = soup.find('div', attrs={'class': 'card'})
     elif command == 'tomorrow':  # button tomorrow
-        weather_table = soup.find_all('table', attrs={'class': 'weather-table'})[1]
+        weather_table = soup.find_all('div', attrs={'class': 'card'})[2]
     elif command == 'today':
-        weather_table = soup.find_all('table', attrs={'class': 'weather-table'})[0]
+        weather_table = soup.find_all('div', attrs={'class': 'card'})[0]
     else:  # button for a week
         days_dict = dict()
         day_count = 0
@@ -231,6 +231,12 @@ def get_extended_info(city_name, command, lang):
 
         return days_dict
 
+    weather_city = soup.find('h1', attrs={'class': 'title title_level_1 header-title__title'}).text
+    weather_city = weather_city.split()[-1]
+    weather_day = weather_table.find('strong', attrs={'class': 'forecast-details__day-number'}).text
+    weather_month = weather_table.find('span', attrs={'class': 'forecast-details__day-month'}).text
+    weather_date = f'{weather_day} {weather_month}'
+
     weather_rows = weather_table.find_all('tr', attrs={'class': 'weather-table__row'})
 
     daypart_dict = dict()
@@ -257,6 +263,8 @@ def get_extended_info(city_name, command, lang):
         count += 1
         part_num = str(count)
         daypart_dict['part' + part_num] = temp_daypart_dict
+        daypart_dict['weather_city'] = weather_city
+        daypart_dict['weather_date'] = weather_date
 
     return daypart_dict
 
