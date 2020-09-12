@@ -63,13 +63,13 @@ def button_tomorrow(message, ):
     bot.send_message(chat_id=message.chat.id, text=response, parse_mode='html')
 
 
-# Handle button 'for week'
+# Handle button 'for a week'
 @bot.message_handler(func=lambda message: message.text == '🧙🏿‍♂ На неделю')
 def button_week(message, ):
     cur_user = User.query.filter_by(chat_id=message.chat.id).first()
     city_name = cur_user.city_name
     response = get_next_week(city_name, cur_user.language)
-    bot.send_message(chat_id=message.chat.id, text=response, )
+    bot.send_message(chat_id=message.chat.id, text=response, parse_mode='html')
 
 
 # Handle button 'settings'

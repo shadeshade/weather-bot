@@ -51,8 +51,8 @@ def get_response(city_name, lang):
         daypart_wind_unit = daypart_info["weather_unit"]
         daypart_wind_direct = daypart_info["weather_daypart_direction"]
 
-        daypart_message += f'{daypart.title()}: {daypart_temp}, {daypart_wind} {daypart_wind_unit}, {daypart_wind_direct}' \
-                           f' {daypart_cond_emoji}\n\n'
+        daypart_message += f'{daypart.title()}: {daypart_temp}. {daypart_wind_direct} {daypart_wind}' \
+                           f' {daypart_wind_unit} {daypart_cond_emoji}\n\n'
 
     header = weather_info["header"]
     temp = weather_info["temperature"]
@@ -70,8 +70,8 @@ def get_response(city_name, lang):
                     f'ветер: {wind_speed} {wind_direct}, ' \
                     f'ощущается как: {feels_like}</b> \n\n\n'
 
-    message_part2 = f'\nСветовой день: <b>{daylight_hours}</b>\n' \
-                    f'Восход - Закат: <b>{sunrise} - {sunset}</b>\n'
+    message_part2 = f'\nСветовой день: {daylight_hours}\n' \
+                    f'Восход - Закат: {sunrise} - {sunset}\n'
 
     response_message = message_part1 + daypart_message + message_part2
 
@@ -148,7 +148,7 @@ def get_next_day(city_name, lang):
         response_message += f'<b>{daypart_info["weather_daypart"].title()}</b>,' \
                             f' {daypart_info["weather_daypart_temp"]}\n' \
                             f'ветер: {daypart_info["weather_daypart_wind"]} {daypart_info["weather_unit"]}' \
-                            f' {cond} {get_condition(cond)}\n\n'
+                            f' {daypart_info["weather_daypart_direction"]}. {cond} {get_condition(cond)}\n\n'
 
     return response_message
 
@@ -157,15 +157,30 @@ def get_next_week(city_name, lang):
     """get next 7 day's weather info"""
     transliterated_city = transliterate_name(city_name)
     extended_info = get_extended_info(transliterated_city, 'week', lang)
-    for day in extended_info.values():
-        for day_part in day.values():
-            weather_daypart = day_part['weather_daypart']
-            weather_daypart_temp = day_part['weather_daypart_temp']
-            weather_daypart_condition = day_part['weather_daypart_condition']
+    response_message = ''
+    weather_city = extended_info['weather_city']
+    try:
+        for day in extended_info.values():
+            day_info_message = ''
+            for day_part in day.values():
+                try:
+                    weather_daypart = day_part['weather_daypart'].title()
+                    weather_daypart_temp = day_part['weather_daypart_temp']
+                    weather_daypart_condition = day_part['weather_daypart_condition']
+                    weather_daypart_wind = day_part['weather_daypart_wind']
+                    weather_daypart_direction = day_part['weather_daypart_direction']
+                    weather_unit = day_part['weather_unit']
+                    weather_cond = get_condition(weather_daypart_condition)
+                    day_info_message += f'{weather_daypart}: {weather_daypart_temp}. {weather_daypart_direction}' \
+                                        f' {weather_daypart_wind} {weather_unit} {weather_cond}\n'
+                except:
+                    day_info_message = f'\n<i><b>{day_part}</b></i>\n{day_info_message}'  # date + weather info
+            response_message += day_info_message
+    except:
+        pass
+    response_message = f'<i>{weather_city} в течение 7-ми дней</i>\n{response_message}'
 
-            response_message = f'{weather_daypart}: {weather_daypart_temp},\n' \
-                               f'{weather_daypart_condition},\n'
-            return response_message
+    return response_message
 
 
 # daily info
@@ -193,8 +208,10 @@ def get_extended_info(city_name, command, lang):
         source = requests.get('https://yandex.com/pogoda/' + city_name + '/details')
         weather_unit = 'm/s'
 
-    # source = requests.get('https://yandex.ru/pogoda/' + city_name + '/details')
     soup = BeautifulSoup(source.content, 'html.parser')
+    # weather_day = weather_table.find('strong', attrs={'class': 'forecast-details__day-number'}).text
+    # weather_month = weather_table.find('span', attrs={'class': 'forecast-details__day-month'}).text
+    # weather_date = f'{weather_day} {weather_month}'
 
     if command == 'daily':  # button daily
         weather_table = soup.find('div', attrs={'class': 'card'})
@@ -205,13 +222,23 @@ def get_extended_info(city_name, command, lang):
     else:  # button for a week
         days_dict = dict()
         day_count = 0
-        weather_tables = soup.find_all('table', attrs={'class': 'weather-table'})
-        for table in weather_tables:
-            weather_rows = table.find_all('tr', attrs={'class': 'weather-table__row'})
+
+        weather_tables = soup.find_all('div', attrs={'class': 'card'})[2:]
+
+        weather_city = soup.find('h1', attrs={'class': 'title title_level_1 header-title__title'}).text
+        weather_city = weather_city.split()[-1]
+
+        for weather_table in weather_tables:
+
+            weather_day = weather_table.find('strong', attrs={'class': 'forecast-details__day-number'}).text
+            weather_month = weather_table.find('span', attrs={'class': 'forecast-details__day-month'}).text
+            weather_date = f'{weather_day} {weather_month}'
+
+            weather_rows = weather_table.find_all('tr', attrs={'class': 'weather-table__row'})
             daypart_dict = dict()
             day_count += 1
             if day_count > 7:
-                return days_dict
+                break
 
             row_count = 0
             for row in weather_rows:
@@ -219,20 +246,33 @@ def get_extended_info(city_name, command, lang):
                 weather_daypart_temp = row.find('div', attrs={'class': 'weather-table__temp'}).text
                 weather_daypart_condition = row.find('td',
                                                      attrs={'class': 'weather-table__body-cell_type_condition'}).text
+                try:
+                    weather_daypart_wind = row.find('span', attrs={'class': 'weather-table__wind'}).text
+                    weather_daypart_direction = row.find('abbr', attrs={'class': 'icon-abbr'}).text
+                except:
+                    weather_daypart_wind = 'Штиль'
+                    weather_daypart_direction = ''
+
                 temp_daypart_dict = {
                     'weather_daypart': weather_daypart,
                     'weather_daypart_temp': weather_daypart_temp,
                     'weather_daypart_condition': weather_daypart_condition,
+                    'weather_daypart_wind': weather_daypart_wind,
+                    'weather_daypart_direction': weather_daypart_direction,
+                    'weather_unit': weather_unit,
                 }
                 row_count += 1
                 part_num = str(row_count)
                 daypart_dict['part' + part_num] = temp_daypart_dict
+            daypart_dict['weather_date'] = weather_date
             days_dict['day' + str(day_count)] = daypart_dict
 
+        days_dict['weather_city'] = weather_city
         return days_dict
 
     weather_city = soup.find('h1', attrs={'class': 'title title_level_1 header-title__title'}).text
     weather_city = weather_city.split()[-1]
+
     weather_day = weather_table.find('strong', attrs={'class': 'forecast-details__day-number'}).text
     weather_month = weather_table.find('span', attrs={'class': 'forecast-details__day-month'}).text
     weather_date = f'{weather_day} {weather_month}'
