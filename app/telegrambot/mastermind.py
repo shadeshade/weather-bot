@@ -199,88 +199,9 @@ def get_daily(city_name, ):
     return response_message
 
 
-def get_extended_info(city_name, command, lang):
-    """return the extended weather info of the current day for daily cast"""
-    if lang == 'ru':
-        source = requests.get('https://yandex.ru/pogoda/' + city_name + '/details')
-        weather_unit = 'м/с'
-    else:
-        source = requests.get('https://yandex.com/pogoda/' + city_name + '/details')
-        weather_unit = 'm/s'
-
-    soup = BeautifulSoup(source.content, 'html.parser')
-    # weather_day = weather_table.find('strong', attrs={'class': 'forecast-details__day-number'}).text
-    # weather_month = weather_table.find('span', attrs={'class': 'forecast-details__day-month'}).text
-    # weather_date = f'{weather_day} {weather_month}'
-
-    if command == 'daily':  # button daily
-        weather_table = soup.find('div', attrs={'class': 'card'})
-    elif command == 'tomorrow':  # button tomorrow
-        weather_table = soup.find_all('div', attrs={'class': 'card'})[2]
-    elif command == 'today':
-        weather_table = soup.find_all('div', attrs={'class': 'card'})[0]
-    else:  # button for a week
-        days_dict = dict()
-        day_count = 0
-
-        weather_tables = soup.find_all('div', attrs={'class': 'card'})[2:]
-
-        weather_city = soup.find('h1', attrs={'class': 'title title_level_1 header-title__title'}).text
-        weather_city = weather_city.split()[-1]
-
-        for weather_table in weather_tables:
-
-            weather_day = weather_table.find('strong', attrs={'class': 'forecast-details__day-number'}).text
-            weather_month = weather_table.find('span', attrs={'class': 'forecast-details__day-month'}).text
-            weather_date = f'{weather_day} {weather_month}'
-
-            weather_rows = weather_table.find_all('tr', attrs={'class': 'weather-table__row'})
-            daypart_dict = dict()
-            day_count += 1
-            if day_count > 7:
-                break
-
-            row_count = 0
-            for row in weather_rows:
-                weather_daypart = row.find('div', attrs={'class': 'weather-table__daypart'}).text
-                weather_daypart_temp = row.find('div', attrs={'class': 'weather-table__temp'}).text
-                weather_daypart_condition = row.find('td',
-                                                     attrs={'class': 'weather-table__body-cell_type_condition'}).text
-                try:
-                    weather_daypart_wind = row.find('span', attrs={'class': 'weather-table__wind'}).text
-                    weather_daypart_direction = row.find('abbr', attrs={'class': 'icon-abbr'}).text
-                except:
-                    weather_daypart_wind = 'Штиль'
-                    weather_daypart_direction = ''
-
-                temp_daypart_dict = {
-                    'weather_daypart': weather_daypart,
-                    'weather_daypart_temp': weather_daypart_temp,
-                    'weather_daypart_condition': weather_daypart_condition,
-                    'weather_daypart_wind': weather_daypart_wind,
-                    'weather_daypart_direction': weather_daypart_direction,
-                    'weather_unit': weather_unit,
-                }
-                row_count += 1
-                part_num = str(row_count)
-                daypart_dict['part' + part_num] = temp_daypart_dict
-            daypart_dict['weather_date'] = weather_date
-            days_dict['day' + str(day_count)] = daypart_dict
-
-        days_dict['weather_city'] = weather_city
-        return days_dict
-
-    weather_city = soup.find('h1', attrs={'class': 'title title_level_1 header-title__title'}).text
-    weather_city = weather_city.split()[-1]
-
-    weather_day = weather_table.find('strong', attrs={'class': 'forecast-details__day-number'}).text
-    weather_month = weather_table.find('span', attrs={'class': 'forecast-details__day-month'}).text
-    weather_date = f'{weather_day} {weather_month}'
-
-    weather_rows = weather_table.find_all('tr', attrs={'class': 'weather-table__row'})
-
+def get_day_info(weather_rows, weather_unit):
     daypart_dict = dict()
-    count = 0
+    row_count = 0
     for row in weather_rows:
         weather_daypart = row.find('div', attrs={'class': 'weather-table__daypart'}).text
         weather_daypart_temp = row.find('div', attrs={'class': 'weather-table__temp'}).text
@@ -298,13 +219,66 @@ def get_extended_info(city_name, command, lang):
             'weather_daypart_condition': weather_daypart_condition,
             'weather_daypart_wind': weather_daypart_wind,
             'weather_daypart_direction': weather_daypart_direction,
-            'weather_unit': weather_unit
+            'weather_unit': weather_unit,
         }
-        count += 1
-        part_num = str(count)
-        daypart_dict['part' + part_num] = temp_daypart_dict
-        daypart_dict['weather_city'] = weather_city
-        daypart_dict['weather_date'] = weather_date
+        row_count += 1
+        daypart_dict['part' + str(row_count)] = temp_daypart_dict
+    return daypart_dict
+
+
+def get_extended_info(city_name, command, lang):
+    """return the extended weather info of the current day for daily cast"""
+    if lang == 'ru':
+        source = requests.get('https://yandex.ru/pogoda/' + city_name + '/details')
+        weather_unit = 'м/с'
+    else:
+        source = requests.get('https://yandex.com/pogoda/' + city_name + '/details')
+        weather_unit = 'm/s'
+
+    soup = BeautifulSoup(source.content, 'html.parser')
+
+    if command == 'daily':  # button daily
+        weather_table = soup.find('div', attrs={'class': 'card'})
+    elif command == 'tomorrow':  # button tomorrow
+        weather_table = soup.find_all('div', attrs={'class': 'card'})[2]
+    elif command == 'today':
+        weather_table = soup.find_all('div', attrs={'class': 'card'})[0]
+    else:  # button for a week
+        days_dict = dict()
+        day_count = 0
+
+        weather_tables = soup.find_all('div', attrs={'class': 'card'})[2:]
+
+        weather_city = soup.find('h1', attrs={'class': 'title title_level_1 header-title__title'}).text
+        weather_city = weather_city.split()[-1]
+
+        for day in weather_tables:
+            weather_day = day.find('strong', attrs={'class': 'forecast-details__day-number'}).text
+            weather_month = day.find('span', attrs={'class': 'forecast-details__day-month'}).text
+            weather_date = f'{weather_day} {weather_month}'
+
+            weather_rows = day.find_all('tr', attrs={'class': 'weather-table__row'})
+            day_count += 1
+            if day_count > 7:
+                break
+
+            daypart_dict = get_day_info(weather_rows, weather_unit)
+            daypart_dict['weather_date'] = weather_date
+            days_dict['day' + str(day_count)] = daypart_dict
+
+        days_dict['weather_city'] = weather_city
+        return days_dict
+
+    weather_city = soup.find('h1', attrs={'class': 'title title_level_1 header-title__title'}).text
+    weather_city = weather_city.split()[-1]
+    weather_day = weather_table.find('strong', attrs={'class': 'forecast-details__day-number'}).text
+    weather_month = weather_table.find('span', attrs={'class': 'forecast-details__day-month'}).text
+    weather_date = f'{weather_day} {weather_month}'
+    weather_rows = weather_table.find_all('tr', attrs={'class': 'weather-table__row'})
+
+    daypart_dict = get_day_info(weather_rows, weather_unit)
+    daypart_dict['weather_city'] = weather_city
+    daypart_dict['weather_date'] = weather_date
 
     return daypart_dict
 
