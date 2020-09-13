@@ -51,7 +51,7 @@ def get_response(city_name, lang):
         daypart_wind_unit = daypart_info["weather_unit"]
         daypart_wind_direct = daypart_info["weather_daypart_direction"]
 
-        daypart_message += f'{daypart.title()}: {daypart_temp}. {daypart_wind_direct} {daypart_wind}' \
+        daypart_message += f'{daypart.title()}: {daypart_temp}; {daypart_wind_direct} {daypart_wind}' \
                            f' {daypart_wind_unit} {daypart_cond_emoji}\n\n'
 
     header = weather_info["header"]
@@ -135,10 +135,21 @@ def get_weather_info(city_name, lang):
     return response_message
 
 
-def get_next_day(city_name, lang):
+def get_next_day(city_name, lang, cond_needed=False):
     """get tomorrow's weather info"""
     transliterated_city = transliterate_name(city_name)
     extended_info = get_extended_info(transliterated_city, 'tomorrow', lang)  # type: Dict
+    if cond_needed:
+        response_dict = {}
+        daypart = 1
+        for v in extended_info.values():
+            try:
+                cond = v["weather_daypart_condition"]
+            except:
+                break
+            response_dict['part'+str(daypart)] = cond
+            daypart += 1
+        return response_dict
 
     response_message = f'<i>{extended_info["weather_city"]} на {extended_info["weather_date"]}</i>\n\n'
     for i in range(1, 5):
@@ -148,7 +159,7 @@ def get_next_day(city_name, lang):
         response_message += f'<b>{daypart_info["weather_daypart"].title()}</b>,' \
                             f' {daypart_info["weather_daypart_temp"]}\n' \
                             f'ветер: {daypart_info["weather_daypart_wind"]} {daypart_info["weather_unit"]}' \
-                            f' {daypart_info["weather_daypart_direction"]}. {cond} {get_condition(cond)}\n\n'
+                            f' {daypart_info["weather_daypart_direction"]}; {cond} {get_condition(cond)}\n\n'
 
     return response_message
 
@@ -171,14 +182,14 @@ def get_next_week(city_name, lang):
                     weather_daypart_direction = day_part['weather_daypart_direction']
                     weather_unit = day_part['weather_unit']
                     weather_cond = get_condition(weather_daypart_condition)
-                    day_info_message += f'{weather_daypart}: {weather_daypart_temp}. {weather_daypart_direction}' \
+                    day_info_message += f'{weather_daypart}: {weather_daypart_temp}; {weather_daypart_direction}' \
                                         f' {weather_daypart_wind} {weather_unit} {weather_cond}\n'
                 except:
                     day_info_message = f'\n<i><b>{day_part}</b></i>\n{day_info_message}'  # date + weather info
             response_message += day_info_message
     except:
         pass
-    response_message = f'<i>{weather_city} в течение 7-ми дней</i>\n{response_message}'
+    response_message = f'<i>{weather_city}. Погода на 7 дней</i>\n{response_message}'
 
     return response_message
 
@@ -199,6 +210,7 @@ def get_daily(city_name, ):
     return response_message
 
 
+# handle get_extended_info func
 def get_day_info(weather_rows, weather_unit):
     daypart_dict = dict()
     row_count = 0
@@ -226,6 +238,7 @@ def get_day_info(weather_rows, weather_unit):
     return daypart_dict
 
 
+# handle 'daily', 'tomorrow', 'today', 'for a week' buttons
 def get_extended_info(city_name, command, lang):
     """return the extended weather info of the current day for daily cast"""
     if lang == 'ru':
@@ -247,20 +260,18 @@ def get_extended_info(city_name, command, lang):
         days_dict = dict()
         day_count = 0
 
-        weather_tables = soup.find_all('div', attrs={'class': 'card'})[2:]
-
         weather_city = soup.find('h1', attrs={'class': 'title title_level_1 header-title__title'}).text
         weather_city = weather_city.split()[-1]
 
+        weather_tables = soup.find_all('div', attrs={'class': 'card'})[2:]
         for day in weather_tables:
+            if day_count > 7:
+                break
             weather_day = day.find('strong', attrs={'class': 'forecast-details__day-number'}).text
             weather_month = day.find('span', attrs={'class': 'forecast-details__day-month'}).text
             weather_date = f'{weather_day} {weather_month}'
-
             weather_rows = day.find_all('tr', attrs={'class': 'weather-table__row'})
             day_count += 1
-            if day_count > 7:
-                break
 
             daypart_dict = get_day_info(weather_rows, weather_unit)
             daypart_dict['weather_date'] = weather_date

@@ -9,6 +9,7 @@ class User(db.Model):
     chat_id = db.Column(db.Integer, unique=True, nullable=False)
     city_name = db.Column(db.String(20), )
     reminder_time = db.relationship('ReminderTime', backref='telegram_user', lazy=True)
+    phenomena_time = db.relationship('PhenomenaTime', backref='telegram_user', lazy=True)
     language = db.Column(db.String(2))
 
     def __repr__(self):
@@ -16,9 +17,19 @@ class User(db.Model):
 
 
 class ReminderTime(db.Model):
-    # __tablename__ = "ReminderTable"
-
     id = db.Column(db.Integer, primary_key=True)
+    hours = db.Column(db.Integer)
+    minutes = db.Column(db.Integer)
+    job_id = db.Column(db.Integer)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+    def __repr__(self):
+        return f"ReminderTime({self.hours}:{self.minutes})"
+
+
+class PhenomenaTime(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    phenomena = db.Column(db.String)
     hours = db.Column(db.Integer)
     minutes = db.Column(db.Integer)
     job_id = db.Column(db.Integer)
