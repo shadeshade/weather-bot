@@ -7,10 +7,10 @@ from flask import request
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
 
 from app import app, db, bot
-from app.data.ticks_db import phenomena_markups
+from app.data.phenomena_db import phenomena_markups
 from app.telegrambot.credentials import HEROKU_DEPLOY_DOMAIN, NGROK_DEPLOY_DOMAIN, TOKEN
 from app.telegrambot.mastermind import *
-from app.telegrambot.models import User, ReminderTime, PhenomenaTime
+from app.telegrambot.models import User, ReminderTime, PhenomenonTime, Phenomenon
 from app.telegrambot.settings import DEBUG
 
 sched = BackgroundScheduler()
@@ -81,6 +81,14 @@ def button_settings(message, ):
     bot.send_message(message.chat.id, text='Настройки', reply_markup=call_settings_keyboard())
 
 
+# Handle button 'phenomenon'
+@bot.message_handler(func=lambda message: message.text == '🌩 События')
+def button_phenomenon(message, ):
+    response = 'Set a reminder about the incoming event you want. ' \
+               'E.g. get notified that rain is expected tomorrow'
+    bot.send_message(message.chat.id, text=response, reply_markup=gen_markup_phenomenon())
+
+
 # Handle button 'daily'
 @bot.message_handler(func=lambda message: message.text == '👨🏻‍🔬 По графику')
 def command_daily(message):
@@ -125,9 +133,9 @@ def daily_info(user_id):
     bot.send_message(user.chat_id, text=response, )
 
 
-# Handle phenomena reminder -
-def set_phenomena(new_reminder, hours, minutes, ):
-    job = sched.add_job(phenomena_info, args=[new_reminder.user_id], trigger='cron', hour=hours, minute=minutes, )
+# Handle phenomenon reminder -
+def set_phenomenon_time(new_reminder, hours, minutes, ):
+    job = sched.add_job(phenomenon_info, args=[new_reminder.user_id], trigger='cron', hour=hours, minute=minutes, )
     job_id = job.id
     new_reminder.job_id = job_id
     db.session.commit()
@@ -135,14 +143,14 @@ def set_phenomena(new_reminder, hours, minutes, ):
         sched.start()
 
 
-# Handle phenomena reminder (sending a reminder) -
-def phenomena_info(user_id):
+# Handle phenomenon reminder (sending a reminder) -
+def phenomenon_info(user_id):
     cur_user = User.query.filter_by(id=user_id).first()
-    phenomena = PhenomenaTime.query.filter_by(user_id=cur_user.id).all()
+    phenomena = PhenomenonTime.query.filter_by(user_id=cur_user.id).all()
     text = get_next_day(cur_user.city_name, cur_user.language, cond_needed=True)
-    for phenomen in phenomena:
-        if phenomen in text:
-            return bot.send_message(cur_user.chat_id, text=f'Tomorrow {phenomena} expected', )
+    for phenomenon in phenomena:
+        if phenomenon in text:
+            return bot.send_message(cur_user.chat_id, text=f'Tomorrow expected {phenomenon}', )
 
 
 # Handle '/daily'
@@ -158,17 +166,9 @@ def back_up_reminders():
     for reminder in reminders:
         set_daily(reminder, reminder.hours, reminder.minutes)
 
-    phenomena_reminders = PhenomenaTime.query.all()
-    for ph_reminder in phenomena_reminders:
-        set_daily(ph_reminder, ph_reminder.hours, ph_reminder.minutes)
-
-
-# Handle button 'phenomena'
-@bot.message_handler(func=lambda message: message.text == '🌩 События')
-def button_phenomena(message, ):
-    response = 'Set a reminder about the incoming event you want. ' \
-               'E.g. get notified that rain is expected tomorrow'
-    bot.send_message(message.chat.id, text=response, reply_markup=gen_markup_phenomena())
+    # phenomenon_reminders = PhenomenonTime.query.all()
+    # for ph_reminder in phenomenon_reminders:
+    #     set_daily(ph_reminder, ph_reminder.hours, ph_reminder.minutes)
 
 
 # Handle button 'city'
@@ -253,41 +253,37 @@ def call_settings_keyboard():
     return keyboard
 
 
-# handle phenomena inline keyboard -
-def gen_markup_phenomena():
+# handle phenomenon inline keyboard -
+def gen_markup_phenomenon():
     markup = InlineKeyboardMarkup(row_width=2)
     tick = '✖'
     markup.add(
-        InlineKeyboardButton(f"{tick}Сильный ветер", callback_data="phenomena strong wind"),
-        InlineKeyboardButton(f"{tick}Град", callback_data="phenomena hailstorm"),
-        InlineKeyboardButton(f"{tick}Ураган", callback_data="phenomena hurricane"),
-        InlineKeyboardButton(f"{tick}Гроза", callback_data="phenomena storm"),
-        InlineKeyboardButton(f"{tick}Дождь", callback_data="phenomena rain"),
-        InlineKeyboardButton(f"{tick}Сильный ливень", callback_data="phenomena heavy rain"),
-        InlineKeyboardButton(f"{tick}Туман", callback_data="phenomena fog"),
-        InlineKeyboardButton(f"{tick}Сильная жара", callback_data="phenomena intense heat"),
-        InlineKeyboardButton(f"{tick}Все события", callback_data="phenomena all"),
-        InlineKeyboardButton("Изменить время", callback_data="phenomena time"),
+        InlineKeyboardButton(f"{tick}Сильный ветер", callback_data="phenomenon strong wind"),
+        InlineKeyboardButton(f"{tick}Град", callback_data="phenomenon hailstorm"),
+        InlineKeyboardButton(f"{tick}Ураган", callback_data="phenomenon hurricane"),
+        InlineKeyboardButton(f"{tick}Гроза", callback_data="phenomenon storm"),
+        InlineKeyboardButton(f"{tick}Дождь", callback_data="phenomenon rain"),
+        InlineKeyboardButton(f"{tick}Сильный ливень", callback_data="phenomenon heavy rain"),
+        InlineKeyboardButton(f"{tick}Туман", callback_data="phenomenon fog"),
+        InlineKeyboardButton(f"{tick}Сильная жара", callback_data="phenomenon intense heat"),
+        InlineKeyboardButton(f"{tick}Все события", callback_data="phenomenon all"),
+        InlineKeyboardButton("Изменить время", callback_data="phenomenon time"),
     )
     return markup
 
 
-# handle phenomena inline -
-@bot.callback_query_handler(func=lambda call: 'phenomena' in call.data)
-def callback_phenomena(call):
-    cur_user = User.query.filter_by(chat_id=call.from_user.id).first()
-    user_id = cur_user.id
+# handle phenomenon inline keyboard time setting (hours) -
+@bot.callback_query_handler(func=lambda call: call.data == "back_to_hours_ph" or call.data == "phenomenon time")
+def callback_phenomenon_keyboard(call):
+    try:
+        user_id = User.query.filter_by(chat_id=call.from_user.id).first()
+        user_id = user_id.id
 
-    reminder_hours = call.data[:-2]
-    new_reminder = ReminderTime(hours=reminder_hours, user_id=user_id)
-    db.session.add(new_reminder)
-    db.session.commit()
-
-
-
-# handle phenomena inline keyboard time setting (hours) -
-@bot.callback_query_handler(func=lambda call: call.data == "phenomena time")
-def callback_phenomena_hr(call):
+        phenomena_hr = PhenomenonTime.query.filter_by(minutes=None, user_id=user_id).first()
+        db.session.delete(phenomena_hr)
+        db.session.commit()
+    except:
+        pass
     markup = InlineKeyboardMarkup(row_width=4)
     markup.add(
         InlineKeyboardButton("✖00:00", callback_data="0hr_ph"), InlineKeyboardButton("✖01:00", callback_data="1hr_ph"),
@@ -309,25 +305,27 @@ def callback_phenomena_hr(call):
         InlineKeyboardButton("✖21:00", callback_data="21hr_ph"),
         InlineKeyboardButton("✖22:00", callback_data="22hr_ph"),
         InlineKeyboardButton("✖23:00", callback_data="23hr_ph"),
+        InlineKeyboardButton("↩ Back", callback_data="back_to_ph"),
+
     )
 
     bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
-                          text="Set the time you want to receive phenomena information",
+                          text="Set the time you want to receive phenomenon information",
                           reply_markup=markup)
 
 
-# handle phenomena inline keyboard time setting (minutes) -
+# handle phenomenon inline keyboard time setting (minutes) -
 @bot.callback_query_handler(func=lambda call: 'hr_ph' in call.data)
-def callback_phenomena_min(call):
+def callback_phenomenon_hr(call):
     """
-        writing phenomena hours data to db
+        writing phenomenon hours data to db
     """
     user_id = User.query.filter_by(chat_id=call.from_user.id).first()
     user_id = user_id.id
 
-    phenomena_hours = call.data[:-5]
-    new_phenomena = PhenomenaTime(hours=phenomena_hours, user_id=user_id)
-    db.session.add(new_phenomena)
+    phenomenon_hours = call.data[:-5]
+    new_phenomenon = PhenomenonTime(hours=phenomenon_hours, user_id=user_id)
+    db.session.add(new_phenomenon)
     db.session.commit()
 
     markup = InlineKeyboardMarkup(row_width=3)
@@ -341,29 +339,29 @@ def callback_phenomena_min(call):
                )
 
     bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
-                          text="Set the time you want to receive phenomena info",
+                          text="Set the time you want to receive phenomenon info",
                           reply_markup=markup)
 
 
-# handle phenomena inline keyboard -
+# handle phenomenon inline keyboard -
 @bot.callback_query_handler(func=lambda call: 'min_ph' in call.data)
-def callback_inline_daily(call):
+def callback_phenomenon_min(call):
     """
-    writing phenomena minutes data to db
+    writing phenomenon minutes data to db
     """
     user_id = User.query.filter_by(chat_id=call.from_user.id).first()
     user_id = user_id.id
 
-    phenomena_minutes = call.data[:-6]
-    new_phenomena = PhenomenaTime.query.filter_by(user_id=user_id).order_by(PhenomenaTime.id.desc()).first()
+    phenomenon_minutes = call.data[:-6]
+    new_phenomenon = PhenomenonTime.query.filter_by(user_id=user_id).order_by(PhenomenonTime.id.desc()).first()
 
-    phenomena_hours = new_phenomena.hours
+    phenomenon_hours = new_phenomenon.hours
 
-    existing_phenomena = PhenomenaTime.query.filter_by(user_id=user_id, hours=phenomena_hours,
-                                                       minutes=phenomena_minutes).first()
-    if existing_phenomena is not None:  # if reminder exists
-        phenomena_job_id = existing_phenomena.job_id
-        db.session.delete(existing_phenomena)
+    existing_phenomenon = PhenomenonTime.query.filter_by(user_id=user_id, hours=phenomenon_hours,
+                                                         minutes=phenomenon_minutes).first()
+    if existing_phenomenon is not None:  # if reminder exists
+        phenomena_job_id = existing_phenomenon.job_id
+        db.session.delete(existing_phenomenon)
         db.session.commit()
 
         remove_daily(job_id=phenomena_job_id)
@@ -372,15 +370,50 @@ def callback_inline_daily(call):
 
     else:  # if reminder does not exist
 
-        new_phenomena.minutes = phenomena_minutes
+        new_phenomenon.minutes = phenomenon_minutes
         db.session.commit()
-        set_phenomena(new_phenomena, phenomena_hours, phenomena_minutes, )
+        set_phenomenon_time(new_phenomenon, phenomenon_hours, phenomenon_minutes, )
 
     # bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
     #                       text=f"Schedule was set up at {new_reminder.hours}:{new_reminder.minutes}")
 
     bot.answer_callback_query(callback_query_id=call.id, show_alert=False,
-                              text=f"Schedule was set up at {phenomena_hours}:{phenomena_minutes}")
+                              text=f"Schedule was set up at {phenomenon_hours}:{phenomenon_minutes}")
+
+
+# handle phenomenon db -
+@bot.callback_query_handler(func=lambda call: 'phenomenon' in call.data)
+def callback_phenomenon(call):
+    """"add phenomenon to db"""
+    cur_user = User.query.filter_by(chat_id=call.from_user.id).first()
+    user_id = cur_user.id
+    phenomenon_data = call.data
+    new_phenomenon = Phenomenon.query.filter_by(phenomenon=phenomenon_data, user_id=user_id).first()
+    try:
+        db.session.delete(new_phenomenon)
+    except:
+        new_phenomenon = Phenomenon(phenomenon=phenomenon_data, user_id=user_id)
+        db.session.add(new_phenomenon)
+    db.session.commit()
+    # set_phenomenon_time()
+
+
+# # handle back to phenomenon button
+# @bot.callback_query_handler(func=lambda call: call.data == "back_to_hours_ph")
+# def callback_inline_phenomenon_back(call):
+#     try:
+#         user_id = User.query.filter_by(chat_id=call.from_user.id).first()
+#         user_id = user_id.id
+#
+#         phenomena_hr = PhenomenonTime.query.filter_by(minutes=None, user_id=user_id).first()
+#         db.session.delete(phenomena_hr)
+#         db.session.commit()
+#     except:
+#         pass
+#
+#     bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
+#                           text="Set the time you want to receive phenomenon information",
+#                           reply_markup=callback_phenomenon_keyboard(call))
 
 
 # handle language inline keyboard
@@ -488,7 +521,7 @@ def callback_inline_daily(call):
                               text=f"Schedule was set up at {reminder_hours}:{reminder_minutes}")
 
 
-# handle back button
+# handle back to hours button
 @bot.callback_query_handler(func=lambda call: call.data == "back_to_hours")
 def callback_inline_back(call):
     try:
@@ -505,6 +538,7 @@ def callback_inline_back(call):
                           text="Set daily time you want to receive weather information",
                           reply_markup=gen_markup_daily())
 
+
 # handle settings button
 # @bot.callback_query_handler(func=lambda call: call.data == "settings")
 # def callback_inline(call):
@@ -517,3 +551,4 @@ def callback_inline_back(call):
 #
 #     bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="menu",
 #                           reply_markup=gen_markup())
+7
