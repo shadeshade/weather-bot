@@ -8,6 +8,8 @@ from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeybo
 
 from app import app, db, bot
 from app.data.lang_db import main_keyboard_lang as mkl
+from app.data.lang_db import command_daily_lang as cdl
+from app.data.lang_db import callback_inline_daily_lang as cidl
 from app.data.lang_db import button_weather_now_lang as bwn
 # from app.data.phenomena_db import phenomena_markups
 from app.telegrambot.credentials import HEROKU_DEPLOY_DOMAIN, NGROK_DEPLOY_DOMAIN, TOKEN
@@ -81,37 +83,44 @@ def button_tomorrow(message, ):
 # Handle button 'for a week'
 @bot.message_handler(func=lambda message: message.text == mkl['en'][2] or message.text == mkl['ru'][2])
 def button_week(message, ):
-    cur_user = User.query.filter_by(chat_id=message.chat.id).first()
-    city_name = cur_user.city_name
-    response = get_next_week(city_name, cur_user.language)
-    bot.send_message(chat_id=message.chat.id, text=response, parse_mode='html')
+    chat_id = message.chat.id
+    cur_user = User.query.filter_by(chat_id=chat_id).first()
+    city = cur_user.city_name
+    lang = cur_user.language
+    response = get_next_week(city=city, lang=lang)
+    bot.send_message(chat_id=chat_id, text=response, parse_mode='html')
 
 
 # Handle button 'settings'
 @bot.message_handler(func=lambda message: message.text == mkl['en'][3] or message.text == mkl['ru'][3])
 def button_settings(message, ):
+    chat_id = message.chat.id
     try:
-        cur_user = User.query.filter_by(chat_id=message.chat.id).first()
+        cur_user = User.query.filter_by(chat_id=chat_id).first()
         lang = cur_user.language
     except:
         lang = message.from_user.language_code
-    bot.send_message(message.chat.id, text='Настройки', reply_markup=call_settings_keyboard(lang))
+    bot.send_message(chat_id, text='Настройки', reply_markup=call_settings_keyboard(lang))
 
 
 # Handle button 'daily'
 @bot.message_handler(func=lambda message: message.text == mkl['en'][4] or message.text == mkl['ru'][4])
 def command_daily(message):
-    if not bool(User.query.filter_by(chat_id=message.chat.id).first()):
-        return bot.send_message(message.chat.id, text='No city name was set up', )
+    chat_id = message.chat.id
+    user = User.query.filter_by(chat_id=chat_id).first()
+    try:
+        lang = user.language
+    except:
+        lang = message.from_user.language_code
+        return bot.send_message(chat_id, cdl[lang][0])
 
     reminders = ReminderTime.query.all()
     for reminder in reminders:
         if reminder.hours is None or reminder.minutes is None:
             db.session.delete(reminder)
             db.session.commit()
-
-    response = 'Set daily time you want to receive weather information'
-    bot.send_message(message.chat.id, text=response, reply_markup=gen_markup_daily())
+    response = cdl[lang][1]
+    bot.send_message(chat_id, text=response, reply_markup=gen_markup_daily())
 
 
 # Handle '/daily' (setting a daily reminder)
@@ -255,12 +264,17 @@ def respond(message):
     else:
         chat_id = message.chat.id
         user = User.query.filter_by(chat_id=chat_id).first()
-        lang = user.language
+        try:
+            lang = user.language
+        except:
+            lang = message.from_user.language_code
         city = message.text
         response = get_response(city, lang)
-        if 'Try again' not in response:
-            user.city_name = city
-            db.session.commit()
+        if not user:
+            if 'Try again' not in response:
+                user = User(username=message.from_user.first_name, chat_id=chat_id, city_name=city, language=lang)
+                db.session.add(user)
+                db.session.commit()
         return bot.send_message(chat_id=chat_id, text=response, parse_mode='html')
 
 
@@ -271,8 +285,8 @@ def call_main_keyboard(lang):
     btn2 = KeyboardButton(mkl[lang][1])
     btn3 = KeyboardButton(mkl[lang][2])
     btn4 = KeyboardButton(mkl[lang][3])
-    keyboard.add(btn1, btn2, )
-    keyboard.add(btn3, btn4, )
+    keyboard.add(btn1, btn2)
+    keyboard.add(btn3, btn4)
     return keyboard
 
 
@@ -293,7 +307,7 @@ def call_settings_keyboard(lang):
     return keyboard
 
 
-# handle phenomenon inline keyboard -
+# handle phenomenon inline keyboard
 def gen_markup_phenomenon():
     markup = InlineKeyboardMarkup(row_width=2)
     tick = '✖'
@@ -312,7 +326,7 @@ def gen_markup_phenomenon():
     return markup
 
 
-# handle phenomenon inline keyboard time setting (hours) -
+# handle phenomenon inline keyboard time setting (hours)
 @bot.callback_query_handler(func=lambda call: call.data == "back_to_hours_ph" or call.data == "phenomenon time")
 def callback_phenomenon_keyboard(call):
     try:
@@ -355,7 +369,7 @@ def callback_phenomenon_keyboard(call):
                           reply_markup=markup)
 
 
-# handle phenomenon inline keyboard time setting (hours) -
+# handle phenomenon inline keyboard time setting (hours)
 @bot.callback_query_handler(func=lambda call: 'hr_ph' in call.data)
 def callback_phenomenon_hr(call):
     """
@@ -421,7 +435,7 @@ def callback_phenomenon_min(call):
                               text=f"Schedule was set up at {phenomenon_hours}:{phenomenon_minutes}")
 
 
-# handle phenomenon db -
+# handle phenomenon db
 @bot.callback_query_handler(func=lambda call: 'phenomenon' in call.data)
 def callback_phenomenon(call):
     """"add phenomenon to db"""
@@ -447,27 +461,6 @@ def callback_inline_back_ph(call):
     bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
                           text="test",
                           reply_markup=gen_markup_phenomenon())
-
-
-# handle language inline keyboard
-def gen_markup_language():
-    markup = InlineKeyboardMarkup(row_width=2)
-    markup.add(
-        InlineKeyboardButton("✖English", callback_data="english"),
-        InlineKeyboardButton("✖Русский", callback_data="russian"),
-    )
-    return markup
-
-
-# handle language button
-@bot.callback_query_handler(func=lambda call: call.data == "english" or call.data == "russian")
-def callback_inline_back_ph(call):
-    user = User.query.filter_by(chat_id=call.message.chat.id).first()
-    new_lang = call.data
-    user.language = new_lang[:2]
-    db.session.commit()
-    bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
-                          text=f'{new_lang.title()} has been chosen')
 
 
 # handle daily inline keyboard
@@ -497,8 +490,9 @@ def callback_inline_daily_min(call):
     """
     writing hours data to db and changing keyboard
     """
-    cur_user = User.query.filter_by(chat_id=call.from_user.id).first()
-    user_id = cur_user.id
+    user = User.query.filter_by(chat_id=call.from_user.id).first()
+    user_id = user.id
+    lang = user.language
 
     reminder_hours = call.data[:-2]
     new_reminder = ReminderTime(hours=reminder_hours, user_id=user_id)
@@ -512,7 +506,7 @@ def callback_inline_daily_min(call):
                InlineKeyboardButton("✖00:30", callback_data="30min"),
                InlineKeyboardButton("✖00:40", callback_data="40min"),
                InlineKeyboardButton("✖00:50", callback_data="50min"),
-               InlineKeyboardButton("↩ Back", callback_data="back_to_hours"),
+               InlineKeyboardButton(cidl[lang][0], callback_data="back_to_hours"),
                )
 
     bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
@@ -549,18 +543,13 @@ def callback_inline_daily(call):
 
         remove_daily(job_id=reminder_job_id)
         bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text="The time was deleted")
-
-
     else:  # if reminder does not exist
-
         new_reminder.minutes = reminder_minutes
         # db.session.add(new_reminder)
         db.session.commit()
-        set_daily(new_reminder, reminder_hours, reminder_minutes, )
-
+        set_daily(new_reminder, reminder_hours, reminder_minutes)
     # bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
     #                       text=f"Schedule was set up at {new_reminder.hours}:{new_reminder.minutes}")
-
     bot.answer_callback_query(callback_query_id=call.id, show_alert=False,
                               text=f"Schedule was set up at {reminder_hours}:{reminder_minutes}")
 
@@ -581,3 +570,24 @@ def callback_inline_back(call):
     bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
                           text="Set daily time you want to receive weather information",
                           reply_markup=gen_markup_daily())
+
+
+# handle language inline keyboard
+def gen_markup_language():
+    markup = InlineKeyboardMarkup(row_width=2)
+    markup.add(
+        InlineKeyboardButton("✖English", callback_data="english"),
+        InlineKeyboardButton("✖Русский", callback_data="russian"),
+    )
+    return markup
+
+
+# handle language button
+@bot.callback_query_handler(func=lambda call: call.data == "english" or call.data == "russian")
+def callback_inline_back_ph(call):
+    user = User.query.filter_by(chat_id=call.message.chat.id).first()
+    new_lang = call.data
+    user.language = new_lang[:2]
+    db.session.commit()
+    bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                          text=f'{new_lang.title()} has been chosen')

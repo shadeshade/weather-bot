@@ -25,8 +25,24 @@ get_next_day_lang = {
     'en': ['on', 'Wind'],
     'ru': ['на', 'Ветер'],
 }
+
 get_weather_info_lang = {
     'en': ['Calm', ],
     'ru': ['Штиль', ],
+}
+
+get_next_week_lang = {
+    'en': ['Weather for 7 days', ],
+    'ru': ['Погода на 7 дней', ],
+}
+
+command_daily_lang = {
+    'en': ['No city name was set up', 'Set daily time you want to receive weather information'],
+    'ru': ['Введите название города', 'Выбирите время, когда бы вы хотели получать уведомления'],
+}
+
+callback_inline_daily_lang = {
+    'en': ['↩ Back', ],
+    'ru': ['↩ Назад', ],
 }
 
