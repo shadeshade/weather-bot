@@ -7,11 +7,8 @@ import transliterate
 from bs4 import BeautifulSoup
 
 from app.data import emoji_condition_db
-from app.data.lang_db import command_start_lang as csl
-from app.data.lang_db import get_response_lang as grl
-from app.data.lang_db import get_next_day_lang as gndl
-from app.data.lang_db import get_weather_info_lang as gwil
-from app.data.lang_db import get_next_week_lang as gnwl
+from app.data.lang_db import hints
+from app.data.lang_db import info
 
 CUR_PATH = os.path.realpath(__file__)
 BASE_DIR = os.path.dirname(os.path.dirname(CUR_PATH))
@@ -31,7 +28,7 @@ def get_condition(cond):
 
 def get_start(first_name, lang):
     """returns greeting and a short navigate information"""
-    text = csl[lang][0] + first_name + csl[lang][1]
+    text = hints['start msg1'][lang] + first_name + hints['start msg2'][lang]
     return text
 
 
@@ -43,7 +40,7 @@ def get_response(city_name, lang):
         weather_info = get_weather_info(transliterated_city, lang)
         weather_rest_info = get_extended_info(transliterated_city, 'today', lang)  # type: Dict
     except:
-        return grl[lang][0]
+        return info[lang][0]
 
     daypart_message = ''
     for i in range(1, 5):
@@ -54,12 +51,12 @@ def get_response(city_name, lang):
         daypart_cond_emoji = get_condition(daypart_cond)
         daypart_wind = daypart_info["weather_daypart_wind"]
         daypart_wind_unit = daypart_info["weather_unit"]
-        if daypart_wind != gwil[lang][0]:
+        if daypart_wind != info[lang][7]:
             daypart_wind += ' '
             daypart_wind_unit += ' '
         daypart_wind_direct = daypart_info["weather_daypart_direction"]
 
-        daypart_message += f'{daypart.title()}: {daypart_temp};  {grl[lang][2]}: {daypart_wind}' \
+        daypart_message += f'{daypart.title()}: {daypart_temp};  {info[lang][2]}: {daypart_wind}' \
                            f'{daypart_wind_unit}{daypart_wind_direct} {daypart_cond_emoji}\n\n'
 
     header = weather_info["header"]
@@ -74,12 +71,12 @@ def get_response(city_name, lang):
     sunset = weather_info["sunset"]
 
     message_part1 = f'<i>{header}</i>\n\n' \
-                    f'<b>{grl[lang][1]}: {temp}°C;  {cond} {cond_emoji}\n' \
-                    f'{grl[lang][2]}: {wind_speed}{wind_direct};  ' \
-                    f'{grl[lang][3]}: {feels_like}</b> \n\n\n'
+                    f'<b>{info[lang][1]}: {temp}°C;  {cond} {cond_emoji}\n' \
+                    f'{info[lang][2]}: {wind_speed}{wind_direct};  ' \
+                    f'{info[lang][3]}: {feels_like}</b> \n\n\n'
 
-    message_part2 = f'\n{grl[lang][4]}: {daylight_hours}\n' \
-                    f'{grl[lang][5]}: {sunrise} - {sunset}\n'
+    message_part2 = f'\n{info[lang][4]}: {daylight_hours}\n' \
+                    f'{info[lang][5]}: {sunrise} - {sunset}\n'
 
     response_message = message_part1 + daypart_message + message_part2
 
@@ -110,7 +107,7 @@ def get_weather_info(city_name, lang):
         # wind_direction = wind_speed_and_direction.find('abbr')['title']  # wind direction
 
     except:
-        wind_speed = gwil[lang][0]
+        wind_speed = info[lang][7]
         wind_direction = ''
 
     humidity = weather_soup.find('div', attrs={'class': 'fact__humidity'})
@@ -159,7 +156,7 @@ def get_next_day(city_name, lang, cond_needed=False):
             daypart += 1
         return response_dict
 
-    response_message = f'<i>{extended_info["weather_city"]} {gndl[lang][0]} {extended_info["weather_date"]}</i>\n\n'
+    response_message = f'<i>{extended_info["weather_city"]} {info[lang][6]} {extended_info["weather_date"]}</i>\n\n'
     for num in range(1, 5):
         daypart_info = extended_info["part" + str(num)]  # type: Dict[str, str]
         cond = daypart_info["weather_daypart_condition"]
@@ -168,13 +165,12 @@ def get_next_day(city_name, lang, cond_needed=False):
         weather_daypart_wind = daypart_info["weather_daypart_wind"]
         weather_unit = daypart_info["weather_unit"]
         weather_daypart_direction = daypart_info["weather_daypart_direction"]
-        if weather_daypart_wind != gwil[lang][0]:  # if no wind
+        if weather_daypart_wind != info[lang][7]:  # if no wind
             weather_daypart_wind += ' '
             weather_unit += ' '
-        response_message += f'<b>{weather_deypart.title()}</b>,' \
-                            f' {weather_daypart_temp}\n' \
-                            f'{gndl[lang][1]}: {weather_daypart_wind}{weather_unit}' \
-                            f'{weather_daypart_direction};  {cond} {get_condition(cond)}\n\n'
+        response_message += f'<b>{weather_deypart.title()}</b>, {weather_daypart_temp} ' \
+                            f'{info[lang][2]}: {weather_daypart_wind}{weather_unit}' \
+                            f'{weather_daypart_direction}\n{cond} {get_condition(cond)}\n\n'
 
     return response_message
 
@@ -204,7 +200,7 @@ def get_next_week(city, lang):
             response_message += day_info_message
     except:
         pass
-    response_message = f'<i>{weather_city}. {gnwl[lang][0]}</i>\n{response_message}'
+    response_message = f'<i>{weather_city}. {info[lang][8]}</i>\n{response_message}'
 
     return response_message
 
@@ -238,7 +234,7 @@ def get_day_info(weather_rows, unit, lang):
             weather_unit = unit
             weather_daypart_direction = row.find('abbr', attrs={'class': 'icon-abbr'}).text
         except:
-            weather_daypart_wind = gwil[lang][0]
+            weather_daypart_wind = info[lang][7]
             weather_unit = ''
             weather_daypart_direction = ''
 
