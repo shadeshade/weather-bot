@@ -307,15 +307,9 @@ def get_extended_info(city_name, command, lang):
     return daypart_dict
 
 
-def get_help():
+def get_help(lang):
     """returns commands list"""
-    text = '/start:\nStart bot interaction.\n\n' \
-           '/daily:\nSet daily time you want to receive weather information. More than one city addition is ' \
-           'available\n\n' \
-           '/remove_daily:\nChoose the city to remove from your daily info.\n\n' \
-           '/reminder:\nSet reminder about the incoming event you want. E.g. receive a message that rain' \
-           ' is expected in two days\n\n' \
-           '/remove_reminder:\nChoose the reminder name to remove from your reminder list.'
+    text = hints['help intro'][lang]
     return text
 
 

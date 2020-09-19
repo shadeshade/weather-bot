@@ -60,14 +60,13 @@ def command_start(message, ):
 def button_weather_now(message, ):
     chat_id = message.chat.id
     user = User.query.filter_by(chat_id=chat_id).first()
-    city = user.city_name
-    lang = user.language
-    response = get_response(city_name=city, lang=lang)
+    response = get_response(user.city_name, user.language)
     bot.send_message(chat_id=chat_id, text=response, parse_mode='html')
 
 
 # Handle button 'for tomorrow'
-@bot.message_handler(func=lambda message: message.text == buttons['for tomorrow']['en'] or message.text == buttons['for tomorrow']['ru'])
+@bot.message_handler(
+    func=lambda message: message.text == buttons['for tomorrow']['en'] or message.text == buttons['for tomorrow']['ru'])
 def button_tomorrow(message, ):
     user = User.query.filter_by(chat_id=message.chat.id).first()
     response = get_next_day(user.city_name, user.language, cond_needed=False)
@@ -75,7 +74,8 @@ def button_tomorrow(message, ):
 
 
 # Handle button 'for a week'
-@bot.message_handler(func=lambda message: message.text == buttons['for a week']['en'] or message.text == buttons['for a week']['ru'])
+@bot.message_handler(
+    func=lambda message: message.text == buttons['for a week']['en'] or message.text == buttons['for a week']['ru'])
 def button_week(message, ):
     chat_id = message.chat.id
     cur_user = User.query.filter_by(chat_id=chat_id).first()
@@ -86,7 +86,8 @@ def button_week(message, ):
 
 
 # Handle button 'settings'
-@bot.message_handler(func=lambda message: message.text == buttons['settings']['en'] or message.text == buttons['settings']['ru'])
+@bot.message_handler(
+    func=lambda message: message.text == buttons['settings']['en'] or message.text == buttons['settings']['ru'])
 def button_settings(message, ):
     chat_id = message.chat.id
     try:
@@ -98,7 +99,8 @@ def button_settings(message, ):
 
 
 # Handle button 'daily'
-@bot.message_handler(func=lambda message: message.text == buttons['daily']['en'] or message.text == buttons['daily']['ru'])
+@bot.message_handler(
+    func=lambda message: message.text == buttons['daily']['en'] or message.text == buttons['daily']['ru'])
 def command_daily(message):
     chat_id = message.chat.id
     user = User.query.filter_by(chat_id=chat_id).first()
@@ -113,7 +115,7 @@ def command_daily(message):
         if reminder.hours is None or reminder.minutes is None:
             db.session.delete(reminder)
             db.session.commit()
-    response = hints['time hint'][lang]
+    response = hints['time daily'][lang]
     bot.send_message(chat_id, text=response, reply_markup=gen_markup_daily())
 
 
@@ -148,11 +150,12 @@ def daily_info(user_id):
 
 
 # Handle button 'phenomena'
-@bot.message_handler(func=lambda message: message.text == buttons['phenomena']['en'] or message.text == buttons['phenomena']['ru'])
+@bot.message_handler(
+    func=lambda message: message.text == buttons['phenomena']['en'] or message.text == buttons['phenomena']['ru'])
 def button_phenomena(message, ):
     user = User.query.filter_by(chat_id=message.chat.id).first()
     lang = user.language
-    response = hints['phenomena hint'][lang]
+    response = hints['phenomena intro'][lang]
     bot.send_message(message.chat.id, text=response, reply_markup=gen_markup_phenomenon(lang))
 
 
@@ -189,15 +192,14 @@ def delete_ph_time_jobs(user_id):
 
 # Handle phenomenon reminder (sending a reminder)
 def phenomenon_info(user_id):
-    cur_user = User.query.filter_by(id=user_id).first()
-    language = cur_user.language
-    all_phenomena = Phenomenon.query.filter_by(user_id=cur_user.id).all()
-    text = get_next_day(cur_user.city_name, language, cond_needed=True)
+    user = User.query.filter_by(id=user_id).first()
+    all_phenomena = Phenomenon.query.filter_by(user_id=user.id).all()
+    text = get_next_day(user.city_name, user.language, cond_needed=True)
     # text = {'part1': 'Fog', 'part2': 'Strong wind', 'part3': 'Clear', 'part4': 'Clear'}
     for phenomenon in all_phenomena:
         for t in text.values():
             if t.lower() in phenomenon.phenomenon.lower():
-                bot.send_message(cur_user.chat_id, text=f'Tomorrow expected {t}', )
+                bot.send_message(user.chat_id, text=f'Tomorrow expected {t}', )
 
 
 # Handle '/daily'
@@ -219,28 +221,37 @@ def back_up_reminders():
 
 
 # Handle button 'city'
-@bot.message_handler(func=lambda message: message.text == buttons['city']['en'] or message.text == buttons['city']['ru'])
+@bot.message_handler(
+    func=lambda message: message.text == buttons['city']['en'] or message.text == buttons['city']['ru'])
 def button_city(message, ):
-    response = 'Please, type the name of your city'
+    chat_id = message.chat.id
+    user = User.query.filter_by(chat_id=chat_id).first()
+    response = hints['city intro'][user.language]
     bot.send_message(message.chat.id, text=response, )
 
 
 # Handle button 'language'
-@bot.message_handler(func=lambda message: message.text == buttons['language']['en'] or message.text == buttons['language']['ru'])
+@bot.message_handler(
+    func=lambda message: message.text == buttons['language']['en'] or message.text == buttons['language']['ru'])
 def button_language(message, ):
-    response = 'Please, choose your language'
+    chat_id = message.chat.id
+    user = User.query.filter_by(chat_id=chat_id).first()
+    response = hints['lang intro'][user.language]
     bot.send_message(chat_id=message.chat.id, text=response, reply_markup=gen_markup_language())
 
 
 # Handle button 'help'
-@bot.message_handler(func=lambda message: message.text == buttons['help']['en'] or message.text == buttons['help']['ru'])
+@bot.message_handler(
+    func=lambda message: message.text == buttons['help']['en'] or message.text == buttons['help']['ru'])
 def command_help(message, ):
-    response = get_help()
-    bot.send_message(message.chat.id, text=response, )
+    user = User.query.filter_by(chat_id=message.chat.id).first()
+    response = get_help(user.language)
+    bot.send_message(message.chat.id, text=response, parse_mode='html')
 
 
 # Handle button 'menu'
-@bot.message_handler(func=lambda message: message.text == buttons['menu']['en'] or message.text == buttons['menu']['ru'])
+@bot.message_handler(
+    func=lambda message: message.text == buttons['menu']['en'] or message.text == buttons['menu']['ru'])
 def command_help(message, ):
     try:
         cur_user = User.query.filter_by(chat_id=message.chat.id).first()
@@ -401,8 +412,9 @@ def callback_phenomenon_min(call):
     """
     writing phenomenon minutes data to db
     """
-    user_id = User.query.filter_by(chat_id=call.from_user.id).first()
-    user_id = user_id.id
+    user = User.query.filter_by(chat_id=call.from_user.id).first()
+    user_id = user.id
+    lang = user.language
 
     phenomenon_minutes = call.data[:-6]
     new_phenomenon = PhenomenonTime.query.filter_by(user_id=user_id).order_by(PhenomenonTime.id.desc()).first()
@@ -426,10 +438,10 @@ def callback_phenomenon_min(call):
     print('end')
 
     bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
-                          text=f"Schedule was set up at {phenomenon_hours}:{phenomenon_minutes}")
+                          text=f"{hints['schedule set'][lang]} {phenomenon_hours}:{phenomenon_minutes}")
 
     bot.answer_callback_query(callback_query_id=call.id, show_alert=False,
-                              text=f"Schedule was set up at {phenomenon_hours}:{phenomenon_minutes}")
+                              text=f"{hints['schedule set'][lang]} {phenomenon_hours}:{phenomenon_minutes}")
 
 
 # handle phenomenon db
@@ -458,7 +470,7 @@ def callback_inline_back_ph(call):
     user = User.query.filter_by(chat_id=call.message.chat.id).first()
     lang = user.language
     bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
-                          text=hints['phenomena hint'][lang],
+                          text=hints['phenomenon intro'][lang],
                           reply_markup=gen_markup_phenomenon(lang))
 
 
@@ -509,7 +521,7 @@ def callback_inline_daily_min(call):
                )
 
     bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
-                          text=hints['time hint'][lang], reply_markup=markup)
+                          text=hints['time daily'][lang], reply_markup=markup)
 
 
 # handle daily inline keyboard (minutes)
@@ -581,10 +593,9 @@ def gen_markup_language():
 
 # handle language button
 @bot.callback_query_handler(func=lambda call: call.data == "english" or call.data == "russian")
-def callback_inline_back_ph(call):
+def callback_inline_language(call):
     user = User.query.filter_by(chat_id=call.message.chat.id).first()
-    new_lang = call.data
-    user.language = new_lang[:2]
+    new_lang = call.data[:2]
+    user.language = new_lang
     db.session.commit()
-    bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
-                          text=f'{new_lang.title()} has been chosen')
+    bot.send_message(chat_id=call.message.chat.id, text=f'{hints["lang chosen"][new_lang]}', reply_markup=call_settings_keyboard(lang=new_lang))
