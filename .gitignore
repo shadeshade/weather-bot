@@ -10,4 +10,3 @@ ngrok.exe
 /app/bot.db
 /app/log.log
 /app/111.py
-/app/data/scraped.html

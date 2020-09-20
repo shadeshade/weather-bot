@@ -20,7 +20,7 @@ inline_buttons = {
     'heavy rain': {'en': 'Heavy rain', 'ru': 'Сильный ливень'},
     'fog': {'en': 'Fog', 'ru': 'Туман'},
     'intense heat': {'en': 'Intense heat', 'ru': 'Сильная жара'},
-    'phenomena all': {'en': 'All phenomena', 'ru': 'Все события'},
+    'all phenomena': {'en': 'All phenomena', 'ru': 'Все события'},
     'set time': {'en': 'Set time', 'ru': 'Изменить время'},
     'back': {'en': '↩ Back', 'ru': '↩ Назад'},
 }
@@ -32,7 +32,7 @@ hints = {
         'ru': ' !\nНапишите название своего города</b> 🌏 \n\nДля дополнительной информации используйте /help'},
     'no city': {'en': 'No city name was set up', 'ru': 'Введите название города'},
     'time daily': {'en': 'Set daily time you want to receive weather information',
-                   'ru': 'Выбирите время, когда бы вы хотели получать уведомления'},
+                   'ru': 'Выбирите время, в которое вы бы хотели получать уведомления'},
     'schedule set': {'en': 'The schedule was set at', 'ru': 'График был установлен на'},
     'schedule delete': {'en': 'The schedule for this time has been deleted', 'ru': 'График на это время был удален'},
     'phenomena intro': {'en': 'Select phenomena and time at which you would like to receive notification',
@@ -55,7 +55,8 @@ hints = {
               ' an upcoming phenomenon.'
               '\n\n<b>City:</b>\nChoose your city.'
               '\n\n<b>Language:</b>\nChoose your language.'
-              '\n\nAlso you can enter the name of the city and get information without changing the previously set city',
+              '\n\nAlso you can enter the name of the city and get information without changing the previously set '
+              'city',
         'ru': '<b>Привет, ниже приведен список кнопок и их фунции, с которыми я умею работать.</b>'
               '\n\n<b>Погода сейчас:</b>\nПолучить информацию о текущей погоде.'
               '\n\n<b>На завтра:</b>\nПолучить информацию о погоде на завтра.'
@@ -67,7 +68,6 @@ hints = {
               '\n\n<b>Язык:</b>\nВыберите ваш язык.'
               '\n\nТакже вы можете ввести название города и получить информацию, не меняя ранее установленный город.'
     },
-
 }
 
 info = {

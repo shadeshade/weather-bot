@@ -42,8 +42,6 @@ class Phenomenon(db.Model):
     phenomenon = db.Column(db.String)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
-    # phenomenon_time_id = db.Column(db.Integer, db.ForeignKey('phenomenon_time.id'), nullable=False)
-
     def __repr__(self):
         return f"Phenomenon({self.phenomenon})"
 

@@ -6,9 +6,8 @@ import requests
 import transliterate
 from bs4 import BeautifulSoup
 
-from app.data import emoji_condition_db
-from app.data.lang_db import hints
-from app.data.lang_db import info
+from app.data import emoji_conditions
+from app.data.localization import hints, info
 
 CUR_PATH = os.path.realpath(__file__)
 BASE_DIR = os.path.dirname(os.path.dirname(CUR_PATH))
@@ -19,10 +18,10 @@ STATIC_DIR = os.path.join(BASE_DIR, 'static')
 def get_condition(cond):
     """"return emoji from the dictionary"""
     try:
-        condition = emoji_condition_db.cond_emoji[cond.lower()]
+        condition = emoji_conditions.cond_emoji[cond.lower()]
     except:
-        translated = emoji_condition_db.cond_trans_reversed[cond.lower()]
-        condition = emoji_condition_db.cond_emoji[translated.lower()]
+        translated = emoji_conditions.cond_trans_reversed[cond.lower()]
+        condition = emoji_conditions.cond_emoji[translated.lower()]
     return condition.title()
 
 
@@ -104,8 +103,6 @@ def get_weather_info(city_name, lang):
         wind_speed = wind_speed_and_direction.find('span', attrs={'class': 'wind-speed'}).text  # wind speed
         wind_speed += ' '
         wind_direction = wind_speed_and_direction.find('span', attrs={'class': 'fact__unit'}).text  # wind unit, direct
-        # wind_direction = wind_speed_and_direction.find('abbr')['title']  # wind direction
-
     except:
         wind_speed = info[lang][7]
         wind_direction = ''
