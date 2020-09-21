@@ -203,9 +203,9 @@ def get_next_week(city, lang):
 
 
 # daily info
-def get_daily(city_name, ):
+def get_daily(city_name, lang):
     transliterated_city = transliterate_name(city_name)
-    extended_info = get_extended_info(transliterated_city, 'daily')
+    extended_info = get_extended_info(transliterated_city, 'daily', lang)
     # part_nums = [1,2,3,4]
     # printing_message = ''
     # for num in part_nums:
