@@ -67,7 +67,7 @@ def button_weather_now(message, ):
     func=lambda message: message.text == buttons['for tomorrow']['en'] or message.text == buttons['for tomorrow']['ru'])
 def button_tomorrow(message, ):
     user = User.query.filter_by(chat_id=message.chat.id).first()
-    response = get_next_day(user.city_name, user.language, cond_needed=False)
+    response = get_next_day(user.city_name, user.language, phenomenon_info=False)
     bot.send_message(chat_id=message.chat.id, text=response, parse_mode='html')
 
 
@@ -143,8 +143,9 @@ def set_daily(new_reminder, hours, minutes, ):
 def daily_info(user_id):
     user = User.query.filter_by(id=user_id).first()
     city_name = user.city_name
-    response = get_daily(city_name, user.language)
-    bot.send_message(user.chat_id, text=response, )
+    # response = get_daily(city_name, user.language)
+    response = get_next_day(city_name, user.language, phenomenon_info=False)
+    bot.send_message(user.chat_id, text=response, parse_mode='html')
 
 
 # Handle button 'phenomena'
@@ -181,14 +182,52 @@ def delete_ph_time_jobs(user_id):
 
 # Handle phenomenon reminder (sending a reminder)
 def phenomenon_info(user_id):
+    pass
     user = User.query.filter_by(id=user_id).first()
     all_phenomena = Phenomenon.query.filter_by(user_id=user.id).all()
-    text = get_next_day(user.city_name, user.language, cond_needed=True)
-    # text = {'part1': 'Fog', 'part2': 'Strong wind', 'part3': 'Clear', 'part4': 'Clear'}
+    next_day_info = get_next_day(user.city_name, user.language, phenomenon_info=True)
+    next_day_dict = {'daypart_temp': 0, 'daypart_condition': [], 'daypart_wind': 0}
+    for day_dart_info in next_day_info.values():
+        if '-' not in day_dart_info['weather_daypart_temp']:
+            daypart_temp = int(day_dart_info['weather_daypart_temp'].split('+')[-1].replace('°', ''))
+            if daypart_temp > next_day_dict['daypart_temp']:
+                next_day_dict['daypart_temp'] = daypart_temp
+
+        daypart_condition = day_dart_info['weather_daypart_condition']
+        next_day_dict['daypart_condition'] += [daypart_condition.lower()]
+
+        daypart_wind = float(day_dart_info['weather_daypart_wind'].replace(',', '.'))
+        if daypart_wind > next_day_dict['daypart_wind']:
+            next_day_dict['daypart_wind'] = daypart_wind
+
+    daypart_temp = next_day_dict['daypart_temp']
+    daypart_condition = next_day_dict['daypart_condition']
+    daypart_wind = next_day_dict['daypart_wind']
+
     for phenomenon in all_phenomena:
-        for t in text.values():
-            if t.lower() in phenomenon.phenomenon.lower():
-                bot.send_message(user.chat_id, text=f'Tomorrow expected {t}', )
+        existing_phenomenon = phenomenon.phenomenon
+        if existing_phenomenon in daypart_condition:
+            pass
+        elif existing_phenomenon == "strong wind":
+            if 29 >= daypart_wind >= 12:
+                pass
+            else:
+                continue
+        elif existing_phenomenon == "hurricane":
+            if daypart_wind >= 30:
+                pass
+            else:
+                continue
+        elif existing_phenomenon == "intense heat":
+            if daypart_temp:
+                if daypart_temp >= 30:
+                    pass
+            else:
+                continue
+        else:
+            continue
+        bot.send_message(
+            user.chat_id, text=f'{hints["phenomenon tomorrow"][user.language]} {existing_phenomenon}')
 
 
 # Handle '/daily'
@@ -311,7 +350,7 @@ def gen_markup_phenomena(user_id, lang):
             phenomenon = phenomena_list[idx]
             idx += 1
             if Phenomenon.query.filter_by(user_id=user_id, phenomenon=phenomenon).first():
-                tick = '✔'
+                tick = '✅ '
             else:
                 tick = '✖'
             temp_button_dict[temp_btn] = InlineKeyboardButton(f"{tick}{inline_buttons[phenomenon][lang]}",
@@ -365,7 +404,7 @@ def callback_phenomenon_hr(call):
 # handle phenomenon inline keyboard
 @bot.callback_query_handler(func=lambda call: 'min_ph' in call.data)
 def callback_phenomenon_min(call):
-    """writing phenomenon minutes data to db"""
+    """writing phenomenon time to db"""
     user = User.query.filter_by(chat_id=call.from_user.id).first()
     user_id = user.id
     lang = user.language
@@ -541,3 +580,7 @@ def callback_inline_language(call):
     db.session.commit()
     bot.send_message(chat_id=call.message.chat.id, text=f'{hints["lang chosen"][new_lang]}',
                      reply_markup=call_settings_keyboard(lang=new_lang))
+
+
+if __name__ == '__main__':
+    phenomenon_info(1)

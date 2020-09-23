@@ -137,27 +137,42 @@ def get_weather_info(city_name, lang):
     return response_message
 
 
-def get_next_day(city_name, lang, cond_needed=False):
+def get_next_day(city_name, lang, phenomenon_info=False):
     """get tomorrow's weather info"""
     transliterated_city = transliterate_name(city_name)
     extended_info = get_extended_info(transliterated_city, 'tomorrow', lang)  # type: Dict
-    if cond_needed:
+    if phenomenon_info:
         response_dict = {}
         daypart = 1
-        for v in extended_info.values():
-            try:
-                cond = v["weather_daypart_condition"]
-            except:
-                break
-            response_dict['part' + str(daypart)] = cond
+        for weather_val in extended_info.values():
+            # weather_daypart = weather_val["weather_daypart"]
+            weather_daypart_temp = weather_val["weather_daypart_temp"]
+            # weather_daypart_humidity = weather_val["weather_daypart_humidity"]
+            weather_daypart_condition = weather_val["weather_daypart_condition"]
+            weather_daypart_wind = weather_val["weather_daypart_wind"]
+            # weather_daypart_direction = weather_val["weather_daypart_direction"]
+            # weather_unit = weather_val["weather_unit"]
+
+            temp_daypart_dict = {
+                # 'weather_daypart': weather_daypart,
+                'weather_daypart_temp': weather_daypart_temp,
+                # 'weather_daypart_humidity': weather_daypart_humidity,
+                'weather_daypart_condition': weather_daypart_condition,
+                'weather_daypart_wind': weather_daypart_wind,
+                # 'weather_daypart_direction': weather_daypart_direction,
+                # 'weather_unit': weather_unit,
+            }
+            response_dict['part' + str(daypart)] = temp_daypart_dict
             daypart += 1
+            if daypart > 4:
+                break
         return response_dict
 
     response_message = f'<i>{extended_info["weather_city"]} {info[lang][6]} {extended_info["weather_date"]}</i>\n\n'
     for num in range(1, 5):
         daypart_info = extended_info["part" + str(num)]  # type: Dict[str, str]
         cond = daypart_info["weather_daypart_condition"]
-        weather_deypart = daypart_info["weather_daypart"]
+        weather_daypart = daypart_info["weather_daypart"]
         weather_daypart_temp = daypart_info["weather_daypart_temp"]
         weather_daypart_wind = daypart_info["weather_daypart_wind"]
         weather_unit = daypart_info["weather_unit"]
@@ -165,7 +180,7 @@ def get_next_day(city_name, lang, cond_needed=False):
         if weather_daypart_wind != info[lang][7]:  # if no wind
             weather_daypart_wind += ' '
             weather_unit += ' '
-        response_message += f'<b>{weather_deypart.title()}</b>, {weather_daypart_temp} ' \
+        response_message += f'<b>{weather_daypart.title()}</b>, {weather_daypart_temp} ' \
                             f'{info[lang][2]}: {weather_daypart_wind}{weather_unit}' \
                             f'{weather_daypart_direction}\n{cond} {get_condition(cond)}\n\n'
 
@@ -225,6 +240,8 @@ def get_day_info(weather_rows, unit, lang):
     for row in weather_rows:
         weather_daypart = row.find('div', attrs={'class': 'weather-table__daypart'}).text
         weather_daypart_temp = row.find('div', attrs={'class': 'weather-table__temp'}).text
+        weather_daypart_humidity = row.find('td', attrs={
+            'class': 'weather-table__body-cell weather-table__body-cell_type_humidity'}).text
         weather_daypart_condition = row.find('td', attrs={'class': 'weather-table__body-cell_type_condition'}).text
         try:
             weather_daypart_wind = row.find('span', attrs={'class': 'weather-table__wind'}).text
@@ -238,6 +255,7 @@ def get_day_info(weather_rows, unit, lang):
         temp_daypart_dict = {
             'weather_daypart': weather_daypart,
             'weather_daypart_temp': weather_daypart_temp,
+            'weather_daypart_humidity': weather_daypart_humidity,
             'weather_daypart_condition': weather_daypart_condition,
             'weather_daypart_wind': weather_daypart_wind,
             'weather_daypart_direction': weather_daypart_direction,

@@ -5,7 +5,7 @@ from app.data.localization import inline_buttons
 temp_buttons = ['temp_btn1', 'temp_btn2', 'temp_btn3', 'temp_btn4']
 
 phenomena_list = [
-    "strong wind", "hailstorm", "hurricane", "storm", "rain", "heavy rain", "fog", "intense heat"
+    "strong wind", "hailstorm", "hurricane", "thunderstorm", "rain", "heavy rain", "fog", "intense heat"
 ]
 
 
@@ -15,7 +15,7 @@ def gen_markup_hours(user_id, model, lang, callback='', ):
         temp_button_dict = {}
         for temp_btn in temp_buttons:
             if model.query.filter_by(user_id=user_id, hours=hours).first():
-                tick = '✔'
+                tick = '✅ '
             else:
                 tick = '✖'
             temp_button_dict[temp_btn] = InlineKeyboardButton(f"{tick}{hours:0>2}:00",
@@ -34,7 +34,7 @@ def gen_markup_minutes(user_id, hours, model, lang, callback='', ):
         temp_button_dict = {}
         for temp_btn in temp_buttons[:3]:
             if model.query.filter_by(user_id=user_id, hours=hours, minutes=mins).first():
-                tick = '✔'
+                tick = '✅ '
             else:
                 tick = '✖'
             temp_button_dict[temp_btn] = InlineKeyboardButton(f"{tick}{hours}:{mins:0>2}",
