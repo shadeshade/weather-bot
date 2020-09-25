@@ -1,13 +1,14 @@
-from time import sleep
+# from time import sleep
 
 import telebot
 from apscheduler.schedulers.background import BackgroundScheduler
 from flask import request
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
+from telebot.types import ReplyKeyboardMarkup, KeyboardButton
 
 from app import app, db, bot
+from app.data.tele_buttons import phenomena_list, gen_markup_minutes, gen_markup_hours, gen_markup_phenomena, \
+    gen_markup_language
 from app.data.localization import buttons, inline_buttons
-from app.data.button_template import phenomena_list, temp_buttons, gen_markup_minutes, gen_markup_hours
 from app.telegrambot.credentials import HEROKU_DEPLOY_DOMAIN, NGROK_DEPLOY_DOMAIN, TOKEN
 from app.telegrambot.mastermind import *
 from app.telegrambot.models import User, ReminderTime, PhenomenonTime, Phenomenon
@@ -119,7 +120,6 @@ def command_daily(message):
 
 # Handle '/daily' (setting a daily reminder)
 def set_daily(new_reminder, hours, minutes, ):
-    # sched.add_job(daily_info, trigger='cron', hour=hours, minute=minutes, args=[new_reminder.user_id])
     if hours is None or minutes is None:
         db.session.delete(new_reminder)
         db.session.commit()
@@ -134,7 +134,7 @@ def set_daily(new_reminder, hours, minutes, ):
     jobs = sched.get_jobs()
     print(jobs)
     print('end')
-    # sched.get_job(1)
+
     if sched.state == 0:
         sched.start()
 
@@ -142,9 +142,7 @@ def set_daily(new_reminder, hours, minutes, ):
 # Handle '/daily' (sending a reminder)
 def daily_info(user_id):
     user = User.query.filter_by(id=user_id).first()
-    city_name = user.city_name
-    # response = get_daily(city_name, user.language)
-    response = get_next_day(city_name, user.language, phenomenon_info=False)
+    response = get_response(user.city_name, user.language)
     bot.send_message(user.chat_id, text=response, parse_mode='html')
 
 
@@ -161,9 +159,8 @@ def button_phenomena(message, ):
 # Handle phenomenon reminder
 def set_phenomenon_time(hours, minutes, user_id):
     job = sched.add_job(phenomenon_info, args=[user_id], trigger='cron', hour=hours, minute=minutes, )
-    job_id = job.id
     new_reminder = PhenomenonTime.query.filter_by(user_id=user_id).first()
-    new_reminder.job_id = job_id
+    new_reminder.job_id = job.id
     db.session.commit()
     if sched.state == 0:
         sched.start()
@@ -171,19 +168,15 @@ def set_phenomenon_time(hours, minutes, user_id):
 
 # Handle delete phenomenon reminder
 def delete_ph_time_jobs(user_id):
-    try:
-        ph_reminders = PhenomenonTime.query.filter_by(user_id=user_id).all()
-        for reminder in ph_reminders:
-            job_id = reminder.job_id
-            sched.remove_job(job_id=job_id)
-    except:
-        pass
+    ph_reminders = PhenomenonTime.query.filter_by(user_id=user_id).all()
+    for reminder in ph_reminders:
+        sched.remove_job(job_id=reminder.job_id)
 
 
 # Handle phenomenon reminder (sending a reminder)
 def phenomenon_info(user_id):
-    pass
     user = User.query.filter_by(id=user_id).first()
+    lang = user.language
     all_phenomena = Phenomenon.query.filter_by(user_id=user.id).all()
     next_day_info = get_next_day(user.city_name, user.language, phenomenon_info=True)
     next_day_dict = {'daypart_temp': 0, 'daypart_condition': [], 'daypart_wind': 0}
@@ -222,12 +215,18 @@ def phenomenon_info(user_id):
             if daypart_temp:
                 if daypart_temp >= 30:
                     pass
+                else:
+                    continue
             else:
                 continue
         else:
             continue
-        bot.send_message(
-            user.chat_id, text=f'{hints["phenomenon tomorrow"][user.language]} {existing_phenomenon}')
+
+        if lang == 'ru':
+            response_message = f'{hints["phenomenon tomorrow"][user.language]} {existing_phenomenon}'
+        else:
+            response_message = f'{existing_phenomenon.capitalize()} {hints["phenomenon tomorrow"][user.language]}'
+        bot.send_message(user.chat_id, text=response_message)
 
 
 # Handle '/daily'
@@ -341,29 +340,6 @@ def call_settings_keyboard(lang):
     return keyboard
 
 
-# handle phenomenon inline keyboard
-def gen_markup_phenomena(user_id, lang):
-    markup = InlineKeyboardMarkup(row_width=2)
-    for idx in range(0, len(phenomena_list) - 1, 2):
-        temp_button_dict = {}
-        for temp_btn in temp_buttons[:2]:
-            phenomenon = phenomena_list[idx]
-            idx += 1
-            if Phenomenon.query.filter_by(user_id=user_id, phenomenon=phenomenon).first():
-                tick = '✅ '
-            else:
-                tick = '✖'
-            temp_button_dict[temp_btn] = InlineKeyboardButton(f"{tick}{inline_buttons[phenomenon][lang]}",
-                                                              callback_data=f"phenomenon {phenomenon}")
-        button_values = [v for k, v in temp_button_dict.items()]
-        markup.add(button_values[0], button_values[1])
-
-    markup.add(InlineKeyboardButton(f"{inline_buttons['all phenomena'][lang]}", callback_data="all phenomena"),
-               InlineKeyboardButton(f"{inline_buttons['set time'][lang]}", callback_data="set time phenomena"))
-
-    return markup
-
-
 # handle phenomenon inline keyboard time setting (hours)
 @bot.callback_query_handler(func=lambda call: call.data == "back_to_hours_ph" or call.data == "set time phenomena")
 def callback_phenomenon_time(call):
@@ -421,7 +397,7 @@ def callback_phenomenon_min(call):
         db.session.delete(reminder)
 
     if existing_phenomenon:
-        db.session.delete(existing_phenomenon)
+        # db.session.delete(existing_phenomenon)
         text = f"{hints['schedule delete'][lang]}"
     else:
         new_phenomenon = PhenomenonTime(user_id=user_id, hours=phenomenon_hours, minutes=phenomenon_minutes)
@@ -533,12 +509,10 @@ def callback_inline_daily(call):
     existing_reminder = ReminderTime.query.filter_by(user_id=user_id, hours=reminder_hours,
                                                      minutes=reminder_minutes).first()
     if existing_reminder:  # if reminder exists
-        reminder_job_id = existing_reminder.job_id
-        db.session.delete(existing_reminder)
+        sched.remove_job(job_id=existing_reminder.job_id)  # remove the time from schedule
+        db.session.delete(existing_reminder)  # remove the time from db
         db.session.commit()
-
-        remove_daily(job_id=reminder_job_id)
-        text = hints['schedule delete'][lang]
+        text = f"{hints['schedule delete'][lang]}"
     else:  # if reminder does not exist
         new_reminder = ReminderTime(user_id=user_id, hours=reminder_hours, minutes=reminder_minutes)
         db.session.add(new_reminder)
@@ -559,16 +533,6 @@ def callback_inline_back(call):
     bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
                           text=hints['time daily'][user.language],
                           reply_markup=gen_markup_daily(user_id))
-
-
-# handle language inline keyboard
-def gen_markup_language():
-    markup = InlineKeyboardMarkup(row_width=2)
-    markup.add(
-        InlineKeyboardButton("✖English", callback_data="english"),
-        InlineKeyboardButton("✖Русский", callback_data="russian"),
-    )
-    return markup
 
 
 # handle language button

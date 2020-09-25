@@ -145,22 +145,14 @@ def get_next_day(city_name, lang, phenomenon_info=False):
         response_dict = {}
         daypart = 1
         for weather_val in extended_info.values():
-            # weather_daypart = weather_val["weather_daypart"]
             weather_daypart_temp = weather_val["weather_daypart_temp"]
-            # weather_daypart_humidity = weather_val["weather_daypart_humidity"]
             weather_daypart_condition = weather_val["weather_daypart_condition"]
             weather_daypart_wind = weather_val["weather_daypart_wind"]
-            # weather_daypart_direction = weather_val["weather_daypart_direction"]
-            # weather_unit = weather_val["weather_unit"]
 
             temp_daypart_dict = {
-                # 'weather_daypart': weather_daypart,
                 'weather_daypart_temp': weather_daypart_temp,
-                # 'weather_daypart_humidity': weather_daypart_humidity,
                 'weather_daypart_condition': weather_daypart_condition,
                 'weather_daypart_wind': weather_daypart_wind,
-                # 'weather_daypart_direction': weather_daypart_direction,
-                # 'weather_unit': weather_unit,
             }
             response_dict['part' + str(daypart)] = temp_daypart_dict
             daypart += 1
@@ -221,15 +213,11 @@ def get_next_week(city, lang):
 def get_daily(city_name, lang):
     transliterated_city = transliterate_name(city_name)
     extended_info = get_extended_info(transliterated_city, 'daily', lang)
-    # part_nums = [1,2,3,4]
-    # printing_message = ''
-    # for num in part_nums:
     response_message = f'{extended_info["part1"]["weather_daypart"]},\n' \
                        f'{extended_info["part1"]["weather_daypart_temp"]},\n' \
                        f'{extended_info["part1"]["weather_daypart_condition"]},\n' \
                        f'{extended_info["part1"]["weather_daypart_wind"]},\n' \
                        f'{extended_info["part1"]["weather_daypart_direction"]},\n'
-    # printing_message += response_message
     return response_message
 
 
