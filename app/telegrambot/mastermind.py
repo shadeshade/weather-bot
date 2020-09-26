@@ -325,7 +325,7 @@ def get_cities_data(city):
 
 
 def transliterate_name(city_to_translit):
-    """transliterate a city name for the get_response function in case the name is not in the cities_db"""
+    """transliterate a city name in case the name is not in the cities_db"""
     try:
         city = get_cities_data(city_to_translit.title())
         return city
@@ -333,8 +333,8 @@ def transliterate_name(city_to_translit):
         pass
 
     try:
-        new_name = transliterate.translit(city_to_translit, reversed=True)
-        if 'х' in city_to_translit.lower():
+        new_name = transliterate.translit(city_to_translit, reversed=True)  # ru -> en
+        if 'х' in city_to_translit.lower():  # 'х'(rus) -> 'kh'
             new_name = new_name.lower().replace('h', 'kh')
     except:
         new_name = city_to_translit

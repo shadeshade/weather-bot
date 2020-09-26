@@ -179,12 +179,16 @@ def phenomenon_info(user_id):
     lang = user.language
     all_phenomena = Phenomenon.query.filter_by(user_id=user.id).all()
     next_day_info = get_next_day(user.city_name, user.language, phenomenon_info=True)
-    next_day_dict = {'daypart_temp': 0, 'daypart_condition': [], 'daypart_wind': 0}
+    next_day_dict = {'daypart_temp_positive': 0, 'daypart_temp_negative': 0, 'daypart_condition': [], 'daypart_wind': 0}
     for day_dart_info in next_day_info.values():
-        if '-' not in day_dart_info['weather_daypart_temp']:
-            daypart_temp = int(day_dart_info['weather_daypart_temp'].split('+')[-1].replace('°', ''))
-            if daypart_temp > next_day_dict['daypart_temp']:
-                next_day_dict['daypart_temp'] = daypart_temp
+        if '+' in day_dart_info['weather_daypart_temp']:
+            daypart_temp_positive = int(day_dart_info['weather_daypart_temp'].split('+')[-1].replace('°', ''))
+            if daypart_temp_positive > next_day_dict['daypart_temp_positive']:
+                next_day_dict['daypart_temp_positive'] = daypart_temp_positive
+        elif '-' in day_dart_info['weather_daypart_temp']:
+            daypart_temp_negative = int(day_dart_info['weather_daypart_temp'].split('-')[-1].replace('°', ''))
+            if daypart_temp_negative > next_day_dict['daypart_temp_negative']:
+                next_day_dict['daypart_temp_negative'] = daypart_temp_negative
 
         daypart_condition = day_dart_info['weather_daypart_condition']
         next_day_dict['daypart_condition'] += [daypart_condition.lower()]
@@ -193,7 +197,7 @@ def phenomenon_info(user_id):
         if daypart_wind > next_day_dict['daypart_wind']:
             next_day_dict['daypart_wind'] = daypart_wind
 
-    daypart_temp = next_day_dict['daypart_temp']
+    daypart_temp_positive = next_day_dict['daypart_temp']
     daypart_condition = next_day_dict['daypart_condition']
     daypart_wind = next_day_dict['daypart_wind']
 
@@ -212,13 +216,21 @@ def phenomenon_info(user_id):
             else:
                 continue
         elif existing_phenomenon == "intense heat":
-            if daypart_temp:
-                if daypart_temp >= 30:
+            if daypart_temp_positive:
+                if daypart_temp_positive >= 30:
                     pass
                 else:
                     continue
             else:
                 continue
+        # elif existing_phenomenon == "intense heat":
+        #     if daypart_temp_positive:
+        #         if daypart_temp_positive >= 30:
+        #             pass
+        #         else:
+        #             continue
+        #     else:
+        #         continue
         else:
             continue
 
@@ -247,14 +259,40 @@ def back_up_reminders():
         set_phenomenon_time(ph_reminder.hours, ph_reminder.minutes, ph_reminder.user_id)
 
 
+
 # Handle button 'city'
 @bot.message_handler(
     func=lambda message: message.text == buttons['city']['en'] or message.text == buttons['city']['ru'])
-def button_city(message, ):
+def button_city(message):
     chat_id = message.chat.id
     user = User.query.filter_by(chat_id=chat_id).first()
-    response = hints['city intro'][user.language]
-    bot.send_message(message.chat.id, text=response, )
+    sent = bot.send_message(chat_id=chat_id, text=hints['city intro'][user.language])
+    bot.register_next_step_handler(message=sent, callback=add_city)
+
+
+def add_city(message):
+    chat_id = message.chat.id
+    user = User.query.filter_by(chat_id=chat_id).first()
+    try:
+        lang = user.language
+    except:
+        lang = message.from_user.language_code
+
+    city = message.text
+    response = get_response(city, lang)
+
+    if info[lang][0] not in response:
+        if not user:
+            user = User(username=message.from_user.first_name, chat_id=chat_id, city_name=city, language=lang)
+            db.session.add(user)
+        else:
+            user.city_name = city
+        db.session.commit()
+        return bot.send_message(chat_id=chat_id, text=f"{hints['city added'][user.language]}")
+    elif info[lang][0] in response:
+        return bot.send_message(chat_id=chat_id, text=f"{hints['city fail'][user.language]}")
+
+    # bot.send_message(chat_id=chat_id, text=hints['city intro'][user.language], parse_mode='html')
 
 
 # Handle button 'language'

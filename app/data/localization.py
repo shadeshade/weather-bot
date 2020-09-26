@@ -48,6 +48,8 @@ hints = {
                        'ru': 'Выберите время в которое вы хотите получать оповещение'},
     'city intro': {'en': 'Here you can change the city. To do this, just enter the name of the city',
                    'ru': 'Здесь вы можете изменить свой город. Для этого просто введите название города'},
+    'city added': {'en': 'The city has been added', 'ru': 'Ваш город добавлен'},
+    'city fail': {'en': 'I do not know this city', 'ru': 'Я не знаю такого города'},
     'lang intro': {'en': 'Here you can choose your language',
                    'ru': 'Здесь вы можете выбрать необходимый язык'},
     'lang chosen': {'en': 'English has been chosen',
