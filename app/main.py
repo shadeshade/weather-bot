@@ -59,7 +59,7 @@ def command_start(message, ):
 def button_weather_now(message, ):
     chat_id = message.chat.id
     user = User.query.filter_by(chat_id=chat_id).first()
-    response = get_response(user.city_name, user.language)
+    response = get_response(user.city_name, user.language, message.date)
     bot.send_message(chat_id=chat_id, text=response, parse_mode='html')
 
 
@@ -339,7 +339,7 @@ def respond(message):
         except:
             lang = message.from_user.language_code
         city = message.text
-        response = get_response(city, lang)
+        response = get_response(city, lang, message.date)
         if not user:
             if 'Try again' not in response:
                 user = User(username=message.from_user.first_name, chat_id=chat_id, city_name=city, language=lang)

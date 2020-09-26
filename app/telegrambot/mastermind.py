@@ -5,7 +5,7 @@ from typing import Dict
 import requests
 import transliterate
 from bs4 import BeautifulSoup
-
+from datetime import datetime
 from app.data import emoji_conditions
 from app.data.localization import hints, info
 
@@ -15,8 +15,34 @@ DATA_DIR = os.path.join(BASE_DIR, 'data')
 STATIC_DIR = os.path.join(BASE_DIR, 'static')
 
 
-def get_condition(cond):
+def get_day_part(ts, sunset):  # timestamp in Unix time
+    msg_time = datetime.fromtimestamp(ts).strftime('%H:%M').replace(':', '.')
+    sunset = sunset.replace(':', '.')
+    if float(msg_time) > float(sunset):
+        return 'night'
+    else:
+        return 'day'
+
+
+def get_condition(cond, day_part):
     """"return emoji from the dictionary"""
+    daylight_time = ['morning', 'day', 'утром', 'днём']
+    if day_part.lower() not in daylight_time:
+        try:
+            condition = emoji_conditions.cond_emoji_night[cond.lower()]
+        except:
+            translated = emoji_conditions.cond_trans_reversed[cond.lower()]
+            try:
+                condition = emoji_conditions.cond_emoji_night[translated.lower()]
+            except:
+                try:
+                    condition = emoji_conditions.cond_emoji[cond.lower()]
+                except:
+                    translated = emoji_conditions.cond_trans_reversed[cond.lower()]
+                    condition = emoji_conditions.cond_emoji[translated.lower()]
+
+        return condition.title()
+
     try:
         condition = emoji_conditions.cond_emoji[cond.lower()]
     except:
@@ -31,7 +57,7 @@ def get_start(first_name, lang):
     return text
 
 
-def get_response(city_name, lang):
+def get_response(city_name, lang, timestamp):
     """basic function"""
     transliterated_city = transliterate_name(city_name)
 
@@ -47,7 +73,7 @@ def get_response(city_name, lang):
         daypart = daypart_info["weather_daypart"]
         daypart_temp = daypart_info["weather_daypart_temp"]
         daypart_cond = daypart_info["weather_daypart_condition"]
-        daypart_cond_emoji = get_condition(daypart_cond)
+        daypart_cond_emoji = get_condition(daypart_cond, daypart)
         daypart_wind = daypart_info["weather_daypart_wind"]
         daypart_wind_unit = daypart_info["weather_unit"]
         if daypart_wind != info[lang][7]:
@@ -63,14 +89,16 @@ def get_response(city_name, lang):
     wind_speed = weather_info["wind_speed"]
     wind_direct = weather_info["wind_direction"]
     cond = weather_info["condition"]
-    cond_emoji = get_condition(cond)
     feels_like = weather_info["feels_like"]
     daylight_hours = weather_info["daylight_hours"]
     sunrise = weather_info["sunrise"]
     sunset = weather_info["sunset"]
 
+    day_time = get_day_part(timestamp, sunset)
+    weather_cond = get_condition(cond, day_time)
+
     message_part1 = f'<i>{header}</i>\n\n' \
-                    f'<b>{info[lang][1]}: {temp}°C;  {cond} {cond_emoji}\n' \
+                    f'<b>{info[lang][1]}: {temp}°C;  {cond} {weather_cond}\n' \
                     f'{info[lang][2]}: {wind_speed}{wind_direct};  ' \
                     f'{info[lang][3]}: {feels_like}</b> \n\n\n'
 
@@ -174,7 +202,7 @@ def get_next_day(city_name, lang, phenomenon_info=False):
             weather_unit += ' '
         response_message += f'<b>{weather_daypart.title()}</b>, {weather_daypart_temp} ' \
                             f'{info[lang][2]}: {weather_daypart_wind}{weather_unit}' \
-                            f'{weather_daypart_direction}\n{cond} {get_condition(cond)}\n\n'
+                            f'{weather_daypart_direction}\n{cond} {get_condition(cond, weather_daypart)}\n\n'
 
     return response_message
 
@@ -196,7 +224,7 @@ def get_next_week(city, lang):
                     weather_daypart_wind = day_part['weather_daypart_wind']
                     weather_daypart_direction = day_part['weather_daypart_direction']
                     weather_unit = day_part['weather_unit']
-                    weather_cond = get_condition(weather_daypart_condition)
+                    weather_cond = get_condition(weather_daypart_condition, weather_daypart)
                     day_info_message += f'{weather_daypart}: {weather_daypart_temp}; {weather_daypart_direction}' \
                                         f' {weather_daypart_wind} {weather_unit} {weather_cond}\n'
                 except:
@@ -346,4 +374,5 @@ if __name__ == '__main__':
     # print(get_response('Питер'))
     # get_scrap()
     # get_next_day('moscow')
-    get_condition('snow')
+    # get_condition('snow')
+    pass
