@@ -7,7 +7,7 @@ from telebot.types import ReplyKeyboardMarkup, KeyboardButton
 
 from app import app, db, bot
 from app.data.tele_buttons import phenomena_list, gen_markup_minutes, gen_markup_hours, gen_markup_phenomena, \
-    gen_markup_language
+    gen_markup_language, call_main_keyboard, call_settings_keyboard
 from app.data.localization import buttons, inline_buttons
 from app.telegrambot.credentials import HEROKU_DEPLOY_DOMAIN, NGROK_DEPLOY_DOMAIN, TOKEN
 from app.telegrambot.mastermind import *
@@ -241,9 +241,9 @@ def phenomenon_info(user_id):
         bot.send_message(user.chat_id, text=response_message)
 
 
-# Handle '/daily'
-def remove_daily(job_id):
-    sched.remove_job(job_id=job_id)
+# # Handle '/daily'
+# def remove_daily(job_id):
+#     sched.remove_job(job_id=job_id)
 
 
 # Handle '/daily'
@@ -257,7 +257,6 @@ def back_up_reminders():
     phenomenon_reminders = PhenomenonTime.query.all()
     for ph_reminder in phenomenon_reminders:
         set_phenomenon_time(ph_reminder.hours, ph_reminder.minutes, ph_reminder.user_id)
-
 
 
 # Handle button 'city'
@@ -317,7 +316,7 @@ def command_help(message, ):
 # Handle button 'menu'
 @bot.message_handler(
     func=lambda message: message.text == buttons['menu']['en'] or message.text == buttons['menu']['ru'])
-def command_help(message, ):
+def button_menu(message, ):
     try:
         cur_user = User.query.filter_by(chat_id=message.chat.id).first()
         lang = cur_user.language
@@ -347,35 +346,6 @@ def respond(message):
                 db.session.add(user)
                 db.session.commit()
         return bot.send_message(chat_id=chat_id, text=response, parse_mode='html')
-
-
-# handle main keyboard
-def call_main_keyboard(lang):
-    keyboard = ReplyKeyboardMarkup(one_time_keyboard=False, resize_keyboard=True)
-    btn1 = KeyboardButton(buttons['weather now'][lang])
-    btn2 = KeyboardButton(buttons['for tomorrow'][lang])
-    btn3 = KeyboardButton(buttons['for a week'][lang])
-    btn4 = KeyboardButton(buttons['settings'][lang])
-    keyboard.add(btn1, btn2)
-    keyboard.add(btn3, btn4)
-    return keyboard
-
-
-# handle settings inline keyboard
-def call_settings_keyboard(lang):
-    keyboard = ReplyKeyboardMarkup(one_time_keyboard=False, resize_keyboard=True)
-    btn1 = KeyboardButton(buttons['daily'][lang])
-    btn2 = KeyboardButton(buttons['phenomena'][lang])
-    btn3 = KeyboardButton(buttons['city'][lang])
-    btn4 = KeyboardButton(buttons['language'][lang])
-    btn5 = KeyboardButton(buttons['help'][lang])
-    btn6 = KeyboardButton(buttons['menu'][lang])
-
-    keyboard.add(btn1, btn2, )
-    keyboard.add(btn3, btn4, )
-    keyboard.add(btn5, )
-    keyboard.add(btn6)
-    return keyboard
 
 
 # handle phenomenon inline keyboard time setting (hours)
@@ -513,7 +483,8 @@ def callback_inline_back_ph(call):
 
 # handle daily inline keyboard (hours)
 def gen_markup_daily(user_id):
-    markup = gen_markup_hours(user_id=user_id, model=ReminderTime, lang=None)
+    user = User.query.filter_by(id=user_id).first()
+    markup = gen_markup_hours(user_id=user_id, model=ReminderTime, lang=user.language)
     reminders = ReminderTime.query.filter_by(minutes=None, user_id=user_id).all()
     for reminder in reminders:
         db.session.delete(reminder)
@@ -571,6 +542,22 @@ def callback_inline_back(call):
     bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
                           text=hints['time daily'][user.language],
                           reply_markup=gen_markup_daily(user_id))
+
+
+@bot.callback_query_handler(func=lambda call: "remove all daily" in call.data)
+def callback_remove_all_daily(call):
+    user = User.query.filter_by(chat_id=call.from_user.id).first()
+    lang = user.language
+
+    all_reminders = user.reminder_time
+    for reminder in all_reminders:
+        sched.remove_job(job_id=reminder.job_id)  # remove the time from schedule
+        db.session.delete(reminder)  # remove the time from db
+    db.session.commit()
+
+    bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                          text=f"{hints['schedule delete'][lang]}", reply_markup=gen_markup_hours(
+            user_id=user.id, model=ReminderTime, lang=lang))
 
 
 # handle language button
