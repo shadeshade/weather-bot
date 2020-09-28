@@ -47,7 +47,10 @@ def command_start(message, ):
         db.session.add(new_user)
         db.session.commit()
     user_name = message.from_user.first_name
-    lang = user.language or message.from_user.language_code
+    try:
+        lang = user.language
+    except:
+        lang = message.from_user.language_code
     response = get_start(user_name, lang)
     bot.send_message(message.chat.id, text=response, reply_markup=call_main_keyboard(lang), parse_mode='html')
 
@@ -62,12 +65,11 @@ def button_weather_now(message, ):
         lang = user.language
     except:
         lang = message.from_user.language_code
-    try:
-        city = user.city_name
-    except:
+
+    if not user or not user.city_name:
         return bot.send_message(chat_id=chat_id, text=hints['no city'][lang], parse_mode='html')
 
-    response = get_response(city, lang, message.date)
+    response = get_response(user.city_name, lang, message.date)
     bot.send_message(chat_id=chat_id, text=response, parse_mode='html')
 
 
@@ -81,12 +83,11 @@ def button_tomorrow(message, ):
         lang = user.language
     except:
         lang = message.from_user.language_code
-    try:
-        city = user.city_name
-    except:
+
+    if not user or not user.city_name:
         return bot.send_message(chat_id=chat_id, text=hints['no city'][lang], parse_mode='html')
 
-    response = get_next_day(city, lang, phenomenon_info=False)
+    response = get_next_day(user.city_name, lang, phenomenon_info=False)
     bot.send_message(chat_id=chat_id, text=response, parse_mode='html')
 
 
@@ -101,12 +102,11 @@ def button_week(message, ):
         lang = user.language
     except:
         lang = message.from_user.language_code
-    try:
-        city = user.city_name
-    except:
-        return bot.send_message(chat_id=message.chat.id, text=hints['no city'][lang], parse_mode='html')
 
-    response = get_next_week(city=city, lang=lang)
+    if not user or not user.city_name:
+        return bot.send_message(chat_id=chat_id, text=hints['no city'][lang], parse_mode='html')
+
+    response = get_next_week(city=user.city_name, lang=lang)
     bot.send_message(chat_id=chat_id, text=response, parse_mode='html')
 
 
@@ -308,7 +308,8 @@ def button_city(message, intro=True):
     try:
         lang = user.language
     except:
-        new_user = User(username=message.from_user.first_name, chat_id=chat_id, language=message.from_user.language_code)
+        new_user = User(username=message.from_user.first_name, chat_id=chat_id,
+                        language=message.from_user.language_code)
         db.session.add(new_user)
         db.session.commit()
         lang = new_user.language
@@ -351,13 +352,14 @@ def button_language(message, ):
     try:
         lang = user.language
     except:
-        new_user = User(username=message.from_user.first_name, chat_id=chat_id, language=message.from_user.language_code)
+        new_user = User(username=message.from_user.first_name, chat_id=chat_id,
+                        language=message.from_user.language_code)
         db.session.add(new_user)
         db.session.commit()
         lang = new_user.language
 
     response = hints['lang intro'][lang]
-    bot.send_message(chat_id=message.chat.id, text=response, reply_markup=gen_markup_language())
+    bot.send_message(chat_id=message.chat.id, text=response, reply_markup=gen_markup_language(user_id=user.id))
 
 
 # Handle button 'help'
@@ -365,7 +367,11 @@ def button_language(message, ):
     func=lambda message: message.text == buttons['help']['en'] or message.text == buttons['help']['ru'])
 def command_help(message, ):
     user = User.query.filter_by(chat_id=message.chat.id).first()
-    response = get_help(user.language)
+    try:
+        lang = user.language
+    except:
+        lang = message.from_user.language_code
+    response = get_help(lang)
     bot.send_message(message.chat.id, text=response, parse_mode='html')
 
 
@@ -373,9 +379,9 @@ def command_help(message, ):
 @bot.message_handler(
     func=lambda message: message.text == buttons['menu']['en'] or message.text == buttons['menu']['ru'])
 def button_menu(message, ):
+    user = User.query.filter_by(chat_id=message.chat.id).first()
     try:
-        cur_user = User.query.filter_by(chat_id=message.chat.id).first()
-        lang = cur_user.language
+        lang = user.language
     except:
         lang = message.from_user.language_code
     bot.send_message(message.chat.id, text=hints['menu'][lang], reply_markup=call_main_keyboard(lang))
@@ -396,7 +402,6 @@ def respond(message):
             lang = message.from_user.language_code
         city = message.text
         response = get_response(city, lang, message.date)
-
 
         if not user:
             if 'Try again' not in response:
@@ -613,21 +618,28 @@ def callback_remove_all_daily(call):
         db.session.delete(reminder)  # remove the time from db
     db.session.commit()
 
-    bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
-                          text=f"{hints['schedule delete'][lang]}", reply_markup=gen_markup_hours(
-            user_id=user.id, model=ReminderTime, lang=lang))
+    bot.edit_message_text(
+        chat_id=call.message.chat.id, message_id=call.message.message_id, text=f"{hints['schedule delete'][lang]}",
+        reply_markup=gen_markup_hours(user_id=user.id, model=ReminderTime, lang=lang))
 
 
-# handle language button
+# Handle button 'language'
 @bot.callback_query_handler(func=lambda call: call.data == "english" or call.data == "russian")
 def callback_inline_language(call):
     user = User.query.filter_by(chat_id=call.message.chat.id).first()
     new_lang = call.data[:2]
     user.language = new_lang
     db.session.commit()
-    bot.send_message(chat_id=call.message.chat.id, text=f'{hints["lang chosen"][new_lang]}',
-                     reply_markup=call_settings_keyboard(lang=new_lang))
 
+    try:
+        bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                              text=hints['lang intro'][user.language],
+                              reply_markup=gen_markup_language(user_id=user.id))
 
-if __name__ == '__main__':
-    phenomenon_info(1)
+        bot.send_message(chat_id=call.message.chat.id, text=f'{hints["lang chosen"][new_lang]}',
+                         reply_markup=call_settings_keyboard(lang=new_lang))
+    except:  # bad request
+        pass
+
+    if __name__ == '__main__':
+        phenomenon_info(1)

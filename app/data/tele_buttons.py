@@ -1,7 +1,7 @@
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, KeyboardButton, ReplyKeyboardMarkup
 
 from app.data.localization import inline_buttons, buttons
-from app.telegrambot.models import Phenomenon
+from app.telegrambot.models import Phenomenon, User
 
 temp_buttons = ['temp_btn1', 'temp_btn2', 'temp_btn3', 'temp_btn4']
 
@@ -100,10 +100,20 @@ def gen_markup_minutes(user_id, hours, model, lang, callback='', ):
 
 
 # handle language inline keyboard
-def gen_markup_language():
+def gen_markup_language(user_id):
     markup = InlineKeyboardMarkup(row_width=2)
-    markup.add(
-        InlineKeyboardButton("✖English", callback_data="english"),
-        InlineKeyboardButton("✖Русский", callback_data="russian"),
-    )
+    btns_list = ['English', 'Русский']
+    callback_list = ['english', 'russian']
+    idx = 0
+    temp_button_dict = {}
+    for temp_btn in temp_buttons[:2]:
+        if User.query.filter_by(id=user_id, language=callback_list[idx][:2].lower()).first():
+            tick = '✅ '
+        else:
+            tick = '✖'
+        temp_button_dict[temp_btn] = InlineKeyboardButton(f"{tick}{btns_list[idx]}", callback_data=f"{callback_list[idx]}")
+        idx += 1
+    button_values = [v for k, v in temp_button_dict.items()]
+
+    markup.add(button_values[0], button_values[1])
     return markup
