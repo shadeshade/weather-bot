@@ -3,12 +3,11 @@
 import telebot
 from apscheduler.schedulers.background import BackgroundScheduler
 from flask import request
-from telebot.types import ReplyKeyboardMarkup, KeyboardButton
 
 from app import app, db, bot
+from app.data.localization import buttons, inline_buttons
 from app.data.tele_buttons import phenomena_list, gen_markup_minutes, gen_markup_hours, gen_markup_phenomena, \
     gen_markup_language, call_main_keyboard, call_settings_keyboard
-from app.data.localization import buttons, inline_buttons
 from app.telegrambot.credentials import HEROKU_DEPLOY_DOMAIN, NGROK_DEPLOY_DOMAIN, TOKEN
 from app.telegrambot.mastermind import *
 from app.telegrambot.models import User, ReminderTime, PhenomenonTime, Phenomenon
@@ -59,7 +58,16 @@ def command_start(message, ):
 def button_weather_now(message, ):
     chat_id = message.chat.id
     user = User.query.filter_by(chat_id=chat_id).first()
-    response = get_response(user.city_name, user.language, message.date)
+    try:
+        lang = user.language
+    except:
+        lang = message.from_user.language_code
+    try:
+        city = user.city_name
+    except:
+        return bot.send_message(chat_id=chat_id, text=hints['no city'][lang], parse_mode='html')
+
+    response = get_response(city, lang, message.date)
     bot.send_message(chat_id=chat_id, text=response, parse_mode='html')
 
 
@@ -67,9 +75,19 @@ def button_weather_now(message, ):
 @bot.message_handler(
     func=lambda message: message.text == buttons['for tomorrow']['en'] or message.text == buttons['for tomorrow']['ru'])
 def button_tomorrow(message, ):
+    chat_id = message.chat.id
     user = User.query.filter_by(chat_id=message.chat.id).first()
-    response = get_next_day(user.city_name, user.language, phenomenon_info=False)
-    bot.send_message(chat_id=message.chat.id, text=response, parse_mode='html')
+    try:
+        lang = user.language
+    except:
+        lang = message.from_user.language_code
+    try:
+        city = user.city_name
+    except:
+        return bot.send_message(chat_id=chat_id, text=hints['no city'][lang], parse_mode='html')
+
+    response = get_next_day(city, lang, phenomenon_info=False)
+    bot.send_message(chat_id=chat_id, text=response, parse_mode='html')
 
 
 # Handle button 'for a week'
@@ -77,9 +95,17 @@ def button_tomorrow(message, ):
     func=lambda message: message.text == buttons['for a week']['en'] or message.text == buttons['for a week']['ru'])
 def button_week(message, ):
     chat_id = message.chat.id
-    cur_user = User.query.filter_by(chat_id=chat_id).first()
-    city = cur_user.city_name
-    lang = cur_user.language
+    user = User.query.filter_by(chat_id=chat_id).first()
+
+    try:
+        lang = user.language
+    except:
+        lang = message.from_user.language_code
+    try:
+        city = user.city_name
+    except:
+        return bot.send_message(chat_id=message.chat.id, text=hints['no city'][lang], parse_mode='html')
+
     response = get_next_week(city=city, lang=lang)
     bot.send_message(chat_id=chat_id, text=response, parse_mode='html')
 
@@ -100,13 +126,15 @@ def button_settings(message, ):
 # Handle button 'daily'
 @bot.message_handler(
     func=lambda message: message.text == buttons['daily']['en'] or message.text == buttons['daily']['ru'])
-def command_daily(message):
+def button_daily(message):
     chat_id = message.chat.id
     user = User.query.filter_by(chat_id=chat_id).first()
     try:
         lang = user.language
     except:
         lang = message.from_user.language_code
+
+    if not user or not user.city_name:
         return bot.send_message(chat_id, hints['no city'][lang])
 
     reminders = ReminderTime.query.all()
@@ -145,6 +173,7 @@ def set_daily(new_reminder, hours, minutes, ):
 def daily_info(user_id, set_time):
     user = User.query.filter_by(id=user_id).first()
     response = get_response(user.city_name, user.language, set_time)
+
     bot.send_message(user.chat_id, text=response, parse_mode='html')
 
 
@@ -152,8 +181,17 @@ def daily_info(user_id, set_time):
 @bot.message_handler(
     func=lambda message: message.text == buttons['phenomena']['en'] or message.text == buttons['phenomena']['ru'])
 def button_phenomena(message, ):
-    user = User.query.filter_by(chat_id=message.chat.id).first()
-    lang = user.language
+    chat_id = message.chat.id
+    user = User.query.filter_by(chat_id=chat_id).first()
+
+    try:
+        lang = user.language
+    except:
+        lang = message.from_user.language_code
+
+    if not user or not user.city_name:
+        return bot.send_message(chat_id, hints['no city'][lang])
+
     response = hints['phenomena intro'][lang]
     bot.send_message(message.chat.id, text=response, reply_markup=gen_markup_phenomena(user.id, lang))
 
@@ -264,36 +302,44 @@ def back_up_reminders():
 # Handle button 'city'
 @bot.message_handler(
     func=lambda message: message.text == buttons['city']['en'] or message.text == buttons['city']['ru'])
-def button_city(message):
+def button_city(message, intro=True):
     chat_id = message.chat.id
     user = User.query.filter_by(chat_id=chat_id).first()
-    sent = bot.send_message(chat_id=chat_id, text=hints['city intro'][user.language])
+    try:
+        lang = user.language
+    except:
+        new_user = User(username=message.from_user.first_name, chat_id=chat_id, language=message.from_user.language_code)
+        db.session.add(new_user)
+        db.session.commit()
+        lang = new_user.language
+    if intro:
+        text = hints['city intro'][lang]
+    else:
+        text = info[lang][0]
+    sent = bot.send_message(chat_id=chat_id, text=text)
     bot.register_next_step_handler(message=sent, callback=add_city)
 
 
 def add_city(message):
     chat_id = message.chat.id
     user = User.query.filter_by(chat_id=chat_id).first()
-    try:
-        lang = user.language
-    except:
-        lang = message.from_user.language_code
-
+    lang = user.language
     city = message.text
+
+    btns = {value[lang] for key, value in buttons.items()}
+    inline_btns = {value[lang] for key, value in inline_buttons.items()}
+    if message.text in btns or message.text in inline_btns:
+        return
+
     response = get_response(city, lang, message.date)
 
     if info[lang][0] not in response:
-        if not user:
-            user = User(username=message.from_user.first_name, chat_id=chat_id, city_name=city, language=lang)
-            db.session.add(user)
-        else:
-            user.city_name = city
+        user.city_name = city
         db.session.commit()
-        return bot.send_message(chat_id=chat_id, text=f"{hints['city added'][user.language]}")
+        return bot.send_message(chat_id=chat_id, text=f"{hints['city added'][lang]}")
     elif info[lang][0] in response:
-        return bot.send_message(chat_id=chat_id, text=f"{hints['city fail'][user.language]}")
-
-    # bot.send_message(chat_id=chat_id, text=hints['city intro'][user.language], parse_mode='html')
+        bot.send_message(chat_id=chat_id, text=f"{hints['city fail'][lang]}")
+        return button_city(message, intro=False)
 
 
 # Handle button 'language'
@@ -302,7 +348,15 @@ def add_city(message):
 def button_language(message, ):
     chat_id = message.chat.id
     user = User.query.filter_by(chat_id=chat_id).first()
-    response = hints['lang intro'][user.language]
+    try:
+        lang = user.language
+    except:
+        new_user = User(username=message.from_user.first_name, chat_id=chat_id, language=message.from_user.language_code)
+        db.session.add(new_user)
+        db.session.commit()
+        lang = new_user.language
+
+    response = hints['lang intro'][lang]
     bot.send_message(chat_id=message.chat.id, text=response, reply_markup=gen_markup_language())
 
 
@@ -342,6 +396,8 @@ def respond(message):
             lang = message.from_user.language_code
         city = message.text
         response = get_response(city, lang, message.date)
+
+
         if not user:
             if 'Try again' not in response:
                 user = User(username=message.from_user.first_name, chat_id=chat_id, city_name=city, language=lang)
