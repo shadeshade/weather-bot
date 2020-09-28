@@ -6,4 +6,4 @@ from app.main import back_up_reminders
 if __name__ == '__main__':
     set_webhook()
     back_up_reminders()
-    app.run(threaded=True, host=SERVER_IP, port=PORT, debug=DEBUG)
+    app.run(threaded=True, host=SERVER_IP, port=PORT, debug=DEBUG, use_reloader=False)

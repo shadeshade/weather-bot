@@ -124,7 +124,9 @@ def set_daily(new_reminder, hours, minutes, ):
         db.session.delete(new_reminder)
         db.session.commit()
         return
-    job = sched.add_job(daily_info, args=[new_reminder.user_id], trigger='cron', hour=hours, minute=minutes, )
+    job = sched.add_job(
+        daily_info, args=[new_reminder.user_id, f'{hours}.{minutes}'], trigger='cron', hour=hours, minute=minutes
+    )
     job_id = job.id
     new_reminder.job_id = job_id
     db.session.commit()
@@ -140,9 +142,9 @@ def set_daily(new_reminder, hours, minutes, ):
 
 
 # Handle '/daily' (sending a reminder)
-def daily_info(user_id):
+def daily_info(user_id, set_time):
     user = User.query.filter_by(id=user_id).first()
-    response = get_response(user.city_name, user.language)
+    response = get_response(user.city_name, user.language, set_time)
     bot.send_message(user.chat_id, text=response, parse_mode='html')
 
 
@@ -278,7 +280,7 @@ def add_city(message):
         lang = message.from_user.language_code
 
     city = message.text
-    response = get_response(city, lang)
+    response = get_response(city, lang, message.date)
 
     if info[lang][0] not in response:
         if not user:

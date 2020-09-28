@@ -16,7 +16,10 @@ STATIC_DIR = os.path.join(BASE_DIR, 'static')
 
 
 def get_day_part(ts, sunset):  # timestamp in Unix time
-    msg_time = datetime.fromtimestamp(ts).strftime('%H:%M').replace(':', '.')
+    if isinstance(ts, int):
+        msg_time = datetime.fromtimestamp(ts).strftime('%H:%M').replace(':', '.')
+    else:
+        msg_time = ts
     sunset = sunset.replace(':', '.')
     if float(msg_time) > float(sunset):
         return 'night'
