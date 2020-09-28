@@ -77,3 +77,12 @@ cond_emoji = {
     'thunderstorm': '🌩',
     'wet snow': '🌨'
 }
+
+
+cond_emoji_night = {
+    'clear': '🌙',
+    'mostly clear': '🌙',
+    'partly cloudy': '🌙',
+    'partly cloudy and light-rain': '🌧🌙',
+    'partly cloudy and rain': '🌧🌙',
+}

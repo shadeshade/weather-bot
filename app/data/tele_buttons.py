@@ -1,6 +1,6 @@
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, KeyboardButton, ReplyKeyboardMarkup
 
-from app.data.localization import inline_buttons
+from app.data.localization import inline_buttons, buttons
 from app.telegrambot.models import Phenomenon
 
 temp_buttons = ['temp_btn1', 'temp_btn2', 'temp_btn3', 'temp_btn4']
@@ -8,6 +8,34 @@ temp_buttons = ['temp_btn1', 'temp_btn2', 'temp_btn3', 'temp_btn4']
 phenomena_list = [
     "strong wind", "hailstorm", "hurricane", "thunderstorm", "rain", "heavy rain", "fog", "intense heat"
 ]
+
+
+def call_main_keyboard(lang):
+    keyboard = ReplyKeyboardMarkup(one_time_keyboard=False, resize_keyboard=True)
+    btn1 = KeyboardButton(buttons['weather now'][lang])
+    btn2 = KeyboardButton(buttons['for tomorrow'][lang])
+    btn3 = KeyboardButton(buttons['for a week'][lang])
+    btn4 = KeyboardButton(buttons['settings'][lang])
+    keyboard.add(btn1, btn2)
+    keyboard.add(btn3, btn4)
+    return keyboard
+
+
+def call_settings_keyboard(lang):
+    keyboard = ReplyKeyboardMarkup(one_time_keyboard=False, resize_keyboard=True)
+    btn1 = KeyboardButton(buttons['daily'][lang])
+    btn2 = KeyboardButton(buttons['phenomena'][lang])
+    btn3 = KeyboardButton(buttons['city'][lang])
+    btn4 = KeyboardButton(buttons['language'][lang])
+    btn5 = KeyboardButton(buttons['help'][lang])
+    btn6 = KeyboardButton(buttons['menu'][lang])
+
+    keyboard.add(btn1, btn2, )
+    keyboard.add(btn3, btn4, )
+    keyboard.add(btn5, )
+    keyboard.add(btn6)
+    return keyboard
+
 
 # handle phenomenon inline keyboard
 def gen_markup_phenomena(user_id, lang):
@@ -48,6 +76,8 @@ def gen_markup_hours(user_id, model, lang, callback='', ):
         markup.add(button_values[0], button_values[1], button_values[2], button_values[3])
     if callback == '_ph':
         markup.add(InlineKeyboardButton(inline_buttons['back'][lang], callback_data=f"back_to{callback}"))
+    else:
+        markup.add(InlineKeyboardButton(inline_buttons['remove all daily'][lang], callback_data="remove all daily"))
     return markup
 
 
