@@ -34,8 +34,8 @@ def get_condition(cond, day_part):
         try:
             condition = emoji_conditions.cond_emoji_night[cond.lower()]
         except:
-            translated = emoji_conditions.cond_trans_reversed[cond.lower()]
             try:
+                translated = emoji_conditions.cond_trans_reversed[cond.lower()]
                 condition = emoji_conditions.cond_emoji_night[translated.lower()]
             except:
                 try:
@@ -54,6 +54,7 @@ def get_condition(cond, day_part):
     return condition.title()
 
 
+
 def get_start(first_name, lang):
     """returns greeting and a short navigate information"""
     text = hints['start msg1'][lang] + first_name + hints['start msg2'][lang]
@@ -62,6 +63,7 @@ def get_start(first_name, lang):
 
 def get_response(city_name, lang, timestamp):
     """basic function"""
+
     transliterated_city = transliterate_name(city_name)
 
     try:
