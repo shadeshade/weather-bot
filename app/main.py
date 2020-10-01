@@ -1,17 +1,17 @@
-# from time import sleep
-
 import telebot
 from apscheduler.schedulers.background import BackgroundScheduler
 from flask import request
+from sqlalchemy.orm.exc import UnmappedInstanceError
+from telebot.apihelper import ApiException
 
 from app import app, db, bot
 from app.data.localization import buttons, inline_buttons
-from app.data.tele_buttons import phenomena_list, gen_markup_minutes, gen_markup_hours, gen_markup_phenomena, \
-    gen_markup_language, call_main_keyboard, call_settings_keyboard
 from app.telegrambot.credentials import HEROKU_DEPLOY_DOMAIN, NGROK_DEPLOY_DOMAIN, TOKEN
 from app.telegrambot.mastermind import *
 from app.telegrambot.models import User, ReminderTime, PhenomenonTime, Phenomenon
 from app.telegrambot.settings import DEBUG
+from app.telegrambot.tele_buttons import phenomena_list, gen_markup_minutes, gen_markup_hours, gen_markup_phenomena, \
+    gen_markup_language, call_main_keyboard, call_settings_keyboard
 
 sched = BackgroundScheduler()
 
@@ -19,7 +19,6 @@ sched = BackgroundScheduler()
 @app.route('/setwebhook', methods=['GET', 'POST'])
 def set_webhook():
     bot.remove_webhook()
-    # sleep(1)
     if DEBUG:
         s = bot.set_webhook(f'{NGROK_DEPLOY_DOMAIN}/{TOKEN}')
     else:
@@ -40,19 +39,21 @@ def get_update():
 # Handle '/start'
 @bot.message_handler(commands=['start'])
 def command_start(message, ):
-    user = User.query.filter_by(chat_id=message.chat.id).first()
-    if not user:
-        new_user = User(username=message.from_user.first_name, chat_id=message.chat.id,
-                        language=message.from_user.language_code)
-        db.session.add(new_user)
-        db.session.commit()
-    user_name = message.from_user.first_name
+    chat_id = message.chat.id
+    user = User.query.filter_by(chat_id=chat_id).first()
     try:
         lang = user.language
-    except:
+    except AttributeError as e:
         lang = message.from_user.language_code
-    response = get_start(user_name, lang)
-    bot.send_message(message.chat.id, text=response, reply_markup=call_main_keyboard(lang), parse_mode='html')
+        logger.warning(e)
+
+    if not user:
+        new_user = User(username=message.from_user.first_name, chat_id=message.chat.id, language=lang)
+        db.session.add(new_user)
+        db.session.commit()
+
+    response = get_start(message.from_user.first_name, lang)
+    bot.send_message(chat_id, text=response, reply_markup=call_main_keyboard(lang), parse_mode='html')
 
 
 # Handle button 'weather now'
@@ -63,8 +64,9 @@ def button_weather_now(message, ):
     user = User.query.filter_by(chat_id=chat_id).first()
     try:
         lang = user.language
-    except:
+    except AttributeError as e:
         lang = message.from_user.language_code
+        logger.warning(e)
 
     if not user or not user.city_name:
         return bot.send_message(chat_id=chat_id, text=hints['no city'][lang], parse_mode='html')
@@ -78,11 +80,12 @@ def button_weather_now(message, ):
     func=lambda message: message.text == buttons['for tomorrow']['en'] or message.text == buttons['for tomorrow']['ru'])
 def button_tomorrow(message, ):
     chat_id = message.chat.id
-    user = User.query.filter_by(chat_id=message.chat.id).first()
+    user = User.query.filter_by(chat_id=chat_id).first()
     try:
         lang = user.language
-    except:
+    except AttributeError as e:
         lang = message.from_user.language_code
+        logger.warning(e)
 
     if not user or not user.city_name:
         return bot.send_message(chat_id=chat_id, text=hints['no city'][lang], parse_mode='html')
@@ -97,11 +100,11 @@ def button_tomorrow(message, ):
 def button_week(message, ):
     chat_id = message.chat.id
     user = User.query.filter_by(chat_id=chat_id).first()
-
     try:
         lang = user.language
-    except:
+    except AttributeError as e:
         lang = message.from_user.language_code
+        logger.warning(e)
 
     if not user or not user.city_name:
         return bot.send_message(chat_id=chat_id, text=hints['no city'][lang], parse_mode='html')
@@ -115,11 +118,13 @@ def button_week(message, ):
     func=lambda message: message.text == buttons['settings']['en'] or message.text == buttons['settings']['ru'])
 def button_settings(message, ):
     chat_id = message.chat.id
+    user = User.query.filter_by(chat_id=chat_id).first()
     try:
-        cur_user = User.query.filter_by(chat_id=chat_id).first()
-        lang = cur_user.language
-    except:
+        lang = user.language
+    except AttributeError as e:
         lang = message.from_user.language_code
+        logger.warning(e)
+
     bot.send_message(chat_id, text=info[lang][9], reply_markup=call_settings_keyboard(lang))
 
 
@@ -131,8 +136,9 @@ def button_daily(message):
     user = User.query.filter_by(chat_id=chat_id).first()
     try:
         lang = user.language
-    except:
+    except AttributeError as e:
         lang = message.from_user.language_code
+        logger.warning(e)
 
     if not user or not user.city_name:
         return bot.send_message(chat_id, hints['no city'][lang])
@@ -183,11 +189,11 @@ def daily_info(user_id, set_time):
 def button_phenomena(message, ):
     chat_id = message.chat.id
     user = User.query.filter_by(chat_id=chat_id).first()
-
     try:
         lang = user.language
-    except:
+    except AttributeError as e:
         lang = message.from_user.language_code
+        logger.warning(e)
 
     if not user or not user.city_name:
         return bot.send_message(chat_id, hints['no city'][lang])
@@ -307,16 +313,20 @@ def button_city(message, intro=True):
     user = User.query.filter_by(chat_id=chat_id).first()
     try:
         lang = user.language
-    except:
-        new_user = User(username=message.from_user.first_name, chat_id=chat_id,
-                        language=message.from_user.language_code)
+    except AttributeError as e:
+        lang = message.from_user.language_code
+        logger.warning(e)
+
+    if not user:
+        new_user = User(username=message.from_user.first_name, chat_id=chat_id, language=lang)
         db.session.add(new_user)
         db.session.commit()
-        lang = new_user.language
-    if intro:
+
+    if intro:  # if button_city called first time
         text = hints['city intro'][lang]
-    else:
+    else:  # if user types incorrect city name
         text = info[lang][0]
+
     sent = bot.send_message(chat_id=chat_id, text=text)
     bot.register_next_step_handler(message=sent, callback=add_city)
 
@@ -351,12 +361,14 @@ def button_language(message, ):
     user = User.query.filter_by(chat_id=chat_id).first()
     try:
         lang = user.language
-    except:
-        new_user = User(username=message.from_user.first_name, chat_id=chat_id,
-                        language=message.from_user.language_code)
+    except AttributeError as e:
+        lang = message.from_user.language_code
+        logger.warning(e)
+
+    if not user:
+        new_user = User(username=message.from_user.first_name, chat_id=chat_id, language=lang)
         db.session.add(new_user)
         db.session.commit()
-        lang = new_user.language
 
     response = hints['lang intro'][lang]
     bot.send_message(chat_id=message.chat.id, text=response, reply_markup=gen_markup_language(user_id=user.id))
@@ -366,25 +378,31 @@ def button_language(message, ):
 @bot.message_handler(
     func=lambda message: message.text == buttons['help']['en'] or message.text == buttons['help']['ru'])
 def command_help(message, ):
-    user = User.query.filter_by(chat_id=message.chat.id).first()
+    chat_id = message.chat.id
+    user = User.query.filter_by(chat_id=chat_id).first()
     try:
         lang = user.language
-    except:
+    except AttributeError as e:
         lang = message.from_user.language_code
+        logger.warning(e)
+
     response = get_help(lang)
-    bot.send_message(message.chat.id, text=response, parse_mode='html')
+    bot.send_message(chat_id, text=response, parse_mode='html')
 
 
 # Handle button 'menu'
 @bot.message_handler(
     func=lambda message: message.text == buttons['menu']['en'] or message.text == buttons['menu']['ru'])
 def button_menu(message, ):
-    user = User.query.filter_by(chat_id=message.chat.id).first()
+    chat_id = message.chat.id
+    user = User.query.filter_by(chat_id=chat_id).first()
     try:
         lang = user.language
-    except:
+    except AttributeError as e:
         lang = message.from_user.language_code
-    bot.send_message(message.chat.id, text=hints['menu'][lang], reply_markup=call_main_keyboard(lang))
+        logger.warning(e)
+
+    bot.send_message(chat_id, text=hints['menu'][lang], reply_markup=call_main_keyboard(lang))
 
 
 # Handle all other messages with content_type 'sticker' and 'text' (content_types defaults to ['text'])
@@ -398,16 +416,22 @@ def respond(message):
         user = User.query.filter_by(chat_id=chat_id).first()
         try:
             lang = user.language
-        except:
+        except AttributeError as e:
             lang = message.from_user.language_code
+            logger.warning(e)
+
         city = message.text
         response = get_response(city, lang, message.date)
 
-        if not user:
-            if 'Try again' not in response:
+        if 'Try again' not in response:
+            if not user:
                 user = User(username=message.from_user.first_name, chat_id=chat_id, city_name=city, language=lang)
                 db.session.add(user)
                 db.session.commit()
+            elif not user.city_name:
+                user.city_name = city
+                db.session.commit()
+
         return bot.send_message(chat_id=chat_id, text=response, parse_mode='html')
 
 
@@ -420,13 +444,13 @@ def callback_phenomenon_time(call):
     lang = user.language
     user_id = user.id
 
-    try:
-        ph_reminders = PhenomenonTime.query.filter_by(user_id=user_id, minutes=None).all()
-        for reminder in ph_reminders:
-            db.session.delete(reminder)
-        db.session.commit()
-    except:
-        pass
+    # try:
+    #     ph_reminders = PhenomenonTime.query.filter_by(user_id=user_id, minutes=None).all()
+    #     for reminder in ph_reminders:
+    #         db.session.delete(reminder)
+    #     db.session.commit()
+    # except:
+    #     pass
 
     markup = gen_markup_hours(user_id=user_id, model=PhenomenonTime, lang=lang, callback='_ph')
 
@@ -459,16 +483,15 @@ def callback_phenomenon_min(call):
     phenomenon_hours = call.data[:2]
     phenomenon_minutes = call.data[3:5]
 
-    existing_phenomenon = PhenomenonTime.query.filter_by(user_id=user_id, hours=phenomenon_hours,
-                                                         minutes=phenomenon_minutes).first()
+    phenomenon = PhenomenonTime.query.filter_by(
+        user_id=user_id, hours=phenomenon_hours, minutes=phenomenon_minutes).first()
 
     delete_ph_time_jobs(user_id)
     ph_reminders = PhenomenonTime.query.filter_by(user_id=user_id).all()
     for reminder in ph_reminders:
         db.session.delete(reminder)
 
-    if existing_phenomenon:
-        # db.session.delete(existing_phenomenon)
+    if phenomenon:
         text = f"{hints['schedule delete'][lang]}"
     else:
         new_phenomenon = PhenomenonTime(user_id=user_id, hours=phenomenon_hours, minutes=phenomenon_minutes)
@@ -518,14 +541,17 @@ def callback_phenomenon(call):
     user_id = user.id
     lang = user.language
     phenomenon_data = call.data[11:]
-    new_phenomenon = Phenomenon.query.filter_by(phenomenon=phenomenon_data, user_id=user_id).first()
+    phenomenon = Phenomenon.query.filter_by(phenomenon=phenomenon_data, user_id=user_id).first()
+
     try:
-        db.session.delete(new_phenomenon)
-        text = hints['phenomenon delete'][lang]
-    except:
+        db.session.delete(phenomenon)
+    except UnmappedInstanceError as e:
+        logger.error(f'The phenomenon has not been found. Creating new one\n{e}')
         new_phenomenon = Phenomenon(phenomenon=phenomenon_data, user_id=user_id)
         db.session.add(new_phenomenon)
         text = hints['phenomenon set'][lang]
+    else:
+        text = hints['phenomenon delete'][lang]
 
     db.session.commit()
     bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
@@ -548,10 +574,10 @@ def callback_inline_back_ph(call):
 def gen_markup_daily(user_id):
     user = User.query.filter_by(id=user_id).first()
     markup = gen_markup_hours(user_id=user_id, model=ReminderTime, lang=user.language)
-    reminders = ReminderTime.query.filter_by(minutes=None, user_id=user_id).all()
-    for reminder in reminders:
-        db.session.delete(reminder)
-    db.session.commit()
+    # reminders = ReminderTime.query.filter_by(minutes=None, user_id=user_id).all()
+    # for reminder in reminders:
+    #     db.session.delete(reminder)
+    # db.session.commit()
     return markup
 
 
@@ -635,11 +661,11 @@ def callback_inline_language(call):
         bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
                               text=hints['lang intro'][user.language],
                               reply_markup=gen_markup_language(user_id=user.id))
-
+    except ApiException as e:  # bad request
+        logger.warning(f'Bad request. The output message has not been changed\n({e})')
+    else:
         bot.send_message(chat_id=call.message.chat.id, text=f'{hints["lang chosen"][new_lang]}',
                          reply_markup=call_settings_keyboard(lang=new_lang))
-    except:  # bad request
-        pass
 
     if __name__ == '__main__':
         phenomenon_info(1)
