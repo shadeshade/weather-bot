@@ -17,9 +17,9 @@ class User(db.Model):
 
 class ReminderTime(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    hours = db.Column(db.Integer)
-    minutes = db.Column(db.Integer)
-    job_id = db.Column(db.Integer)
+    hours = db.Column(db.Integer, nullable=False)
+    minutes = db.Column(db.Integer, nullable=False)
+    job_id = db.Column(db.Integer, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
     def __repr__(self):
@@ -28,9 +28,9 @@ class ReminderTime(db.Model):
 
 class PhenomenonTime(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    hours = db.Column(db.Integer)
-    minutes = db.Column(db.Integer)
-    job_id = db.Column(db.Integer)
+    hours = db.Column(db.Integer, nullable=False)
+    minutes = db.Column(db.Integer, nullable=False)
+    job_id = db.Column(db.Integer, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
     def __repr__(self):
@@ -39,16 +39,18 @@ class PhenomenonTime(db.Model):
 
 class Phenomenon(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    phenomenon = db.Column(db.String)
+    phenomenon = db.Column(db.String, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
     def __repr__(self):
         return f"Phenomenon({self.phenomenon})"
 
 
+class PhenomenonManually(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    phenomenon = db.Column(db.String, nullable=False)
+    value = db.Column(db.Integer)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
-
-"""
-  '{self.chat_id}','{self.city_name}',
-user1 = User(username='fea', chat_id=142142412, city_name='fdadfafa', )
-"""
+    def __repr__(self):
+        return f"Phenomenon{self.phenomenon} is set to {self.value}"

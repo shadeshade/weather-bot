@@ -1,13 +1,10 @@
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, KeyboardButton, ReplyKeyboardMarkup
 
 from app.data.localization import inline_buttons, buttons
-from app.telegrambot.models import Phenomenon, User
+from app.telegrambot.models import Phenomenon, User, PhenomenonManually
 
 temp_buttons = ['temp_btn1', 'temp_btn2', 'temp_btn3', 'temp_btn4']
-
-phenomena_list = [
-    "strong wind", "hailstorm", "hurricane", "thunderstorm", "rain", "heavy rain", "fog", "intense heat"
-]
+phenomena_list = ["strong wind", "hailstorm", "hurricane", "thunderstorm", "rain", "heavy rain", "intense heat"]
 
 
 def call_main_keyboard(lang):
@@ -40,7 +37,8 @@ def call_settings_keyboard(lang):
 # handle phenomenon inline keyboard
 def gen_markup_phenomena(user_id, lang):
     markup = InlineKeyboardMarkup(row_width=2)
-    for idx in range(0, len(phenomena_list) - 1, 2):
+
+    for idx in range(0, len(phenomena_list) - 2, 2):
         temp_button_dict = {}
         for temp_btn in temp_buttons[:2]:
             phenomenon = phenomena_list[idx]
@@ -54,9 +52,38 @@ def gen_markup_phenomena(user_id, lang):
         button_values = [v for k, v in temp_button_dict.items()]
         markup.add(button_values[0], button_values[1])
 
-    markup.add(InlineKeyboardButton(f"{inline_buttons['all phenomena'][lang]}", callback_data="all phenomena"),
-               InlineKeyboardButton(f"{inline_buttons['set time'][lang]}", callback_data="set time phenomena"))
+    if Phenomenon.query.filter_by(user_id=user_id, phenomenon=phenomena_list[-1]).first():
+        tick = '✅ '
+    else:
+        tick = '✖'
+    markup.add(
+        InlineKeyboardButton(
+            f"{tick}{inline_buttons[phenomena_list[-1]][lang]}", callback_data='phenomenon intense heat'),
+        InlineKeyboardButton(f"{inline_buttons['manually'][lang]}", callback_data='phenomena manually'),
+        InlineKeyboardButton(f"{inline_buttons['all phenomena'][lang]}", callback_data='all phenomena'),
+        InlineKeyboardButton(f"{inline_buttons['set time'][lang]}", callback_data='set time phenomena')
+    )
+    return markup
 
+
+phenomena_manually_list = ['positive temperature', 'negative temperature', 'wind speed', 'humidity']
+
+# handle phenomenon inline keyboard
+def gen_markup_phenomena_manually(user_id, lang):
+    markup = InlineKeyboardMarkup(row_width=1)
+    for idx in range(0, len(phenomena_manually_list) - 1, 2):
+        temp_button_dict = {}
+        for temp_btn in temp_buttons[:2]:
+            phenomenon = phenomena_manually_list[idx]
+            idx += 1
+            if PhenomenonManually.query.filter_by(user_id=user_id, phenomenon=phenomenon).first():
+                tick = '✅ '
+            else:
+                tick = '✖'
+            temp_button_dict[temp_btn] = InlineKeyboardButton(f"{tick}{inline_buttons[phenomenon][lang]}",
+                                                              callback_data=f"manually {phenomenon}")
+        button_values = [v for k, v in temp_button_dict.items()]
+        markup.add(button_values[0], button_values[1])
     return markup
 
 
@@ -111,7 +138,8 @@ def gen_markup_language(user_id):
             tick = '✅ '
         else:
             tick = '✖'
-        temp_button_dict[temp_btn] = InlineKeyboardButton(f"{tick}{btns_list[idx]}", callback_data=f"{callback_list[idx]}")
+        temp_button_dict[temp_btn] = InlineKeyboardButton(f"{tick}{btns_list[idx]}",
+                                                          callback_data=f"{callback_list[idx]}")
         idx += 1
     button_values = [v for k, v in temp_button_dict.items()]
 

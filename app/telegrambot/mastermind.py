@@ -11,6 +11,7 @@ from transliterate.exceptions import LanguageDetectionError
 
 from app.data import emoji_conditions
 from app.data.localization import hints, info
+from app.telegrambot.models import User
 
 CUR_PATH = os.path.realpath(__file__)
 BASE_DIR = os.path.dirname(os.path.dirname(CUR_PATH))
@@ -371,6 +372,30 @@ def transliterate_name(city_to_translit):
         logger.warning(f'The name of the city is not in Russian. ({e})')
         new_name = city_to_translit
     return new_name
+
+
+def get_user_data(message):
+    chat_id = message.chat.id
+    user = User.query.filter_by(chat_id=chat_id).first()
+    try:
+        username = user.username
+    except AttributeError as e:
+        logger.warning(e)
+        username = message.from_user.first_name
+    try:
+        lang = user.language
+    except AttributeError as e:
+        logger.warning(e)
+        lang = message.from_user.language_code
+
+    try:
+        city_name = user.city_name
+    except AttributeError as e:
+        logger.warning(e)
+        city_name = None
+
+    data_dict = {'user': user, 'username': username, 'city_name': city_name, 'chat_id': chat_id, 'lang': lang}
+    return data_dict
 
 
 if __name__ == '__main__':
