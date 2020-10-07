@@ -113,11 +113,11 @@ hints = {
 info = {
     'en': [
         'Try again', 'Now', 'Wind', 'Feels like', 'Daylight hours', 'Sunrise - Sunset', 'on', 'Calm',
-        'Weather for 7 days', 'Settings', 'm/s', 'Temperature'
+        'Weather for 7 days', 'Settings', 'm/s', 'Temperature', 'Time', 'not set'
     ],
     'ru': [
         'Попробуйте еще раз', 'Сейчас', 'Ветер', 'Ощущается как', 'Световой день', 'Восход - Закат', 'на', 'Штиль',
-        'Погода на 7 дней', 'Настройки', 'м/с', 'Температура'
+        'Погода на 7 дней', 'Настройки', 'м/с', 'Температура', 'Время', 'не задано'
     ],
 }
 
@@ -134,5 +134,4 @@ ph_info = {
     'negative temperature': {'en': 'Negative temperature', 'ru': 'Отрицательная температура'},
     'wind speed': {'en': 'Wind speed', 'ru': 'Скорость ветра'},
     'humidity': {'en': 'Humidity', 'ru': 'Влажность'},
-
 }

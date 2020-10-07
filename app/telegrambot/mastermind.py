@@ -381,11 +381,7 @@ def transliterate_name(city_to_translit):
 def get_user_data(message):
     chat_id = message.chat.id
     user = User.query.filter_by(chat_id=chat_id).first()
-    try:
-        username = user.username
-    except AttributeError as e:
-        logger.warning(e)
-        username = message.from_user.first_name
+    username = message.from_user.first_name
     try:
         lang = user.language
     except AttributeError as e:

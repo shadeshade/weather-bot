@@ -393,21 +393,33 @@ def button_info(message, ):
 
     daily_text = ''
     for daily in all_daily:
-        daily_text += f'{daily.hours}:{daily.minutes}\n'
+        hours = daily.hours
+        minutes = daily.minutes
+        if len(str(hours)) == 1:
+            hours = f'{0}{hours}'
+        if minutes == 0:
+            minutes = '00'
+        daily_text += f'{hours}:{minutes}\n'
     if not daily_text:
-        daily_text = 'not set' + '\n'
+        daily_text = f"{info[lang][13]}\n"
 
     ph_text = ''
     for ph in all_phenomena:
-        ph_text += f'{ph.phenomenon.capitalize()}\n'
+        ph_text += f'{ph_info[ph.phenomenon][lang]}\n'
     if not ph_text:
-        ph_text = 'empty' + '\n'
+        ph_text = f"{info[lang][13]}\n"
 
     man_ph_text = ''
     for man_ph in all_man_phenomena:
-        man_ph_text += f'{man_ph.phenomenon.capitalize()} - {man_ph.value}\n'
+        if man_ph.phenomenon == ph_info['wind speed']['en'].lower():
+            unit = f' {info[lang][10]}'  # m/s
+        elif man_ph.phenomenon == ph_info['humidity']['en'].lower():
+            unit = '%'
+        else:  # temperature
+            unit = '°C'
+        man_ph_text += f'{ph_info[man_ph.phenomenon][lang]}: {man_ph.value}{unit}\n'
     if not man_ph_text:
-        man_ph_text = 'empty' + '\n'
+        man_ph_text = f"{info[lang][13]}\n"
 
     daily_btn = buttons["daily"][lang]
     ph_btn = buttons["phenomena"][lang]
@@ -415,15 +427,21 @@ def button_info(message, ):
     ph_time = PhenomenonTime.query.filter_by(user_id=user_id).first()
 
     try:
-        ph_time = f'{ph_time.hours}:{ph_time.minutes}'
+        hours = ph_time.hours
+        minutes = ph_time.minutes
+        if len(str(hours))==1:
+            hours = f'{0}{hours}'
+        if minutes == 0:
+            minutes = '00'
+        ph_time = f'{hours}:{minutes}'
     except AttributeError as e:
         logger.warning(f'Time was not set\n{repr(e)}')
-        ph_time = 'not set'
+        ph_time = f"{info[lang][13]}\n"
 
-    response = f'<b>{daily_btn}:</b>\n<b>Время:</b>\n{daily_text}' \
+    response = f'<b>{daily_btn}:</b>\n<b>{info[lang][12]}:</b>\n{daily_text}' \
                f'\n<b>{ph_btn}:</b>\n{ph_text}' \
                f'\n<b>{man_ph_btn}:</b>\n{man_ph_text}' \
-               f'\n<b>Время:</b>\n{ph_time}'
+               f'\n<b>{info[lang][12]}:</b>\n{ph_time}'
     bot.send_message(chat_id=message.chat.id, text=response, parse_mode='html')
 
 
@@ -695,10 +713,6 @@ def callback_inline_back_ph(call):
 def gen_markup_daily(user_id):
     user = User.query.filter_by(id=user_id).first()
     markup = gen_markup_hours(user_id=user_id, model=ReminderTime, lang=user.language)
-    # reminders = ReminderTime.query.filter_by(minutes=None, user_id=user_id).all()
-    # for reminder in reminders:
-    #     db.session.delete(reminder)
-    # db.session.commit()
     return markup
 
 
