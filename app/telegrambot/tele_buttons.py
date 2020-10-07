@@ -24,13 +24,14 @@ def call_settings_keyboard(lang):
     btn2 = KeyboardButton(buttons['phenomena'][lang])
     btn3 = KeyboardButton(buttons['city'][lang])
     btn4 = KeyboardButton(buttons['language'][lang])
-    btn5 = KeyboardButton(buttons['help'][lang])
-    btn6 = KeyboardButton(buttons['menu'][lang])
+    btn5 = KeyboardButton(buttons['info'][lang])
+    btn6 = KeyboardButton(buttons['help'][lang])
+    btn7 = KeyboardButton(buttons['menu'][lang])
 
     keyboard.add(btn1, btn2, )
     keyboard.add(btn3, btn4, )
-    keyboard.add(btn5, )
-    keyboard.add(btn6)
+    keyboard.add(btn5, btn6)
+    keyboard.add(btn7)
     return keyboard
 
 

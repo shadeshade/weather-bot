@@ -10,7 +10,7 @@ from bs4 import BeautifulSoup
 from transliterate.exceptions import LanguageDetectionError
 
 from app.data import emoji_conditions
-from app.data.localization import hints, info
+from app.data.localization import hints, info, ph_info
 from app.telegrambot.models import User
 
 CUR_PATH = os.path.realpath(__file__)
@@ -92,13 +92,16 @@ def get_response(city_name, lang, timestamp):
         daypart_cond_emoji = get_condition(daypart_cond, daypart)
 
         wind_speed_and_direction = daypart_info["wind_speed_and_direction"]
+        if wind_speed_and_direction != info[lang][7]:
+            wind_speed_and_direction =  wind_speed_and_direction.split(', ')[0]
 
-        daypart_message += f'{daypart.title()}: {daypart_temp};  {info[lang][2]}: {wind_speed_and_direction} ' \
+        daypart_message += f'{daypart.title()}: {daypart_temp}; {info[lang][2]}: {wind_speed_and_direction} ' \
                            f'{daypart_cond_emoji}\n\n'
 
     header = weather_info["header"]
     temp = weather_info["temperature"]
     wind_speed_and_direction = weather_info["wind_speed_and_direction"]
+    humidity = weather_info["humidity"]
     cond = weather_info["condition"]
     feels_like = weather_info["feels_like"]
     daylight_hours = weather_info["daylight_hours"]
@@ -109,11 +112,11 @@ def get_response(city_name, lang, timestamp):
     weather_cond = get_condition(cond, day_time)
 
     message_part1 = f'<i>{header}</i>\n\n' \
-                    f'<b>{info[lang][1]}: {temp}°C;  {cond} {weather_cond}\n' \
-                    f'{info[lang][2]}: {wind_speed_and_direction};  ' \
-                    f'{info[lang][3]}: {feels_like}</b> \n\n\n'
+                    f'<b>{info[lang][1]}: {temp}°; {info[lang][3]}: {feels_like}\n' \
+                    f'{info[lang][2]}: {wind_speed_and_direction}; {ph_info["humidity"][lang]}: {humidity}\n' \
+                    f'{cond} {weather_cond}</b> \n\n\n'
 
-    message_part2 = f'\n{info[lang][4]}: {daylight_hours}\n' \
+    message_part2 = f'{info[lang][4]}: {daylight_hours}\n' \
                     f'{info[lang][5]}: {sunrise} - {sunset}\n'
 
     response_message = message_part1 + daypart_message + message_part2
@@ -183,14 +186,16 @@ def get_next_day(city_name, lang, phenomenon_info=False):
         response_dict = {}
         daypart = 1
         for weather_val in extended_info.values():
-            weather_daypart_temp = weather_val["weather_daypart_temp"]
-            weather_daypart_condition = weather_val["weather_daypart_condition"]
-            weather_daypart_wind = weather_val["weather_daypart_wind"]
+            daypart_temp = weather_val["weather_daypart_temp"]
+            daypart_condition = weather_val["weather_daypart_condition"]
+            daypart_wind = weather_val["wind_speed_and_direction"].split(info[lang][10])[0].strip()
+            daypart_humidity = weather_val["weather_daypart_humidity"]
 
             temp_daypart_dict = {
-                'weather_daypart_temp': weather_daypart_temp,
-                'weather_daypart_condition': weather_daypart_condition,
-                'weather_daypart_wind': weather_daypart_wind,
+                'daypart_temp': daypart_temp,
+                'daypart_condition': daypart_condition,
+                'daypart_wind': daypart_wind,
+                'daypart_humidity': daypart_humidity,
             }
             response_dict['part' + str(daypart)] = temp_daypart_dict
             daypart += 1
@@ -203,9 +208,9 @@ def get_next_day(city_name, lang, phenomenon_info=False):
         daypart_info = extended_info["part" + str(num)]  # type: Dict[str, str]
         cond = daypart_info["weather_daypart_condition"]
         weather_daypart = daypart_info["weather_daypart"]
-        weather_daypart_temp = daypart_info["weather_daypart_temp"]
+        daypart_temp = daypart_info["weather_daypart_temp"]
         wind_speed_and_direction = daypart_info["wind_speed_and_direction"]
-        response_message += f'<b>{weather_daypart.title()}</b>, {weather_daypart_temp} ' \
+        response_message += f'<b>{weather_daypart.title()}</b>, {daypart_temp} ' \
                             f'{info[lang][2]}: {wind_speed_and_direction}' \
                             f'\n{cond} {get_condition(cond, weather_daypart)}\n\n'
 
@@ -294,8 +299,7 @@ def get_extended_info(city_name, command, lang):
         source = requests.get('https://yandex.com/pogoda/' + city_name + '/details')
 
     soup = BeautifulSoup(source.content, 'html.parser')
-    weather_unit = soup.find_all('div', attrs={'class': 'weather-table__value'})[2].text
-    weather_unit = weather_unit[-3:]
+    weather_unit = info[lang][10]
 
     if command == 'daily':  # button daily
         weather_table = soup.find('div', attrs={'class': 'card'})
@@ -387,7 +391,6 @@ def get_user_data(message):
     except AttributeError as e:
         logger.warning(e)
         lang = message.from_user.language_code
-
     try:
         city_name = user.city_name
     except AttributeError as e:

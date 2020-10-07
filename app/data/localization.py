@@ -3,10 +3,11 @@ buttons = {
     'for tomorrow': {'en': '🧙🏼 For tomorrow', 'ru': '🧙🏼 На завтра'},
     'for a week': {'en': '🧙🏿‍♂ For a week', 'ru': '🧙🏿‍♂ На неделю'},
     'settings': {'en': '🔮 Settings', 'ru': '🔮 Настройки'},
-    'daily': {'en': '👨🏻‍🔬 Daily', 'ru': '👨🏻‍🔬 По графику'},
+    'daily': {'en': '📋 Daily', 'ru': '📋 По графику'},
     'phenomena': {'en': '🌩 Phenomena', 'ru': '🌩 События'},
     'city': {'en': '🌆 City', 'ru': '🌆 Город'},
     'language': {'en': '🇬🇧 Language', 'ru': '🇷🇺 Язык'},
+    'info': {'en': '👨🏻‍🔬 Info', 'ru': '👨🏻‍🔬 Инфо'},
     'help': {'en': '⁉ Help', 'ru': '⁉ Помощь'},
     'menu': {'en': '↩ Menu', 'ru': '↩ Меню'},
 }
@@ -68,7 +69,7 @@ hints = {
     'phenomenon set': {'en': 'was set', 'ru': 'добавлено'},
     'ph manually set': {'en': 'was set at', 'ru': 'было установлено на'},
     'phenomenon delete': {'en': 'has been deleted', 'ru': 'удалено'},
-    'phenomenon tomorrow': {'en': 'is expected tomorrow', 'ru': 'Завтра ожидается'},
+    'phenomenon tomorrow': {'en': 'Expected tomorrow:', 'ru': 'Завтра ожидается:'},
     'phenomenon': {'en': 'Phenomenon', 'ru': 'Событие'},
     'all tick': {'en': 'All phenomena are chosen', 'ru': 'Все события отмечены'},
     'all untick': {'en': 'All phenomena are removed', 'ru': 'Все события отключены'},
@@ -112,10 +113,26 @@ hints = {
 info = {
     'en': [
         'Try again', 'Now', 'Wind', 'Feels like', 'Daylight hours', 'Sunrise - Sunset', 'on', 'Calm',
-        'Weather for 7 days', 'Settings',
+        'Weather for 7 days', 'Settings', 'm/s', 'Temperature'
     ],
     'ru': [
         'Попробуйте еще раз', 'Сейчас', 'Ветер', 'Ощущается как', 'Световой день', 'Восход - Закат', 'на', 'Штиль',
-        'Погода на 7 дней', 'Настройки',
+        'Погода на 7 дней', 'Настройки', 'м/с', 'Температура'
     ],
+}
+
+
+ph_info = {
+    'strong wind': {'en': 'Strong wind', 'ru': 'Сильный ветер'},
+    'hailstorm': {'en': 'Hailstorm', 'ru': 'Град'},
+    'hurricane': {'en': 'Hurricane', 'ru': 'Ураган'},
+    'thunderstorm': {'en': 'Thunderstorm', 'ru': 'Гроза'},
+    'rain': {'en': 'Rain', 'ru': 'Дождь'},
+    'heavy rain': {'en': 'Heavy rain', 'ru': 'Сильный дождь'},
+    'intense heat': {'en': 'Intense heat', 'ru': 'Сильная жара'},
+    'positive temperature': {'en': 'Positive temperature', 'ru': 'Положительная температура'},
+    'negative temperature': {'en': 'Negative temperature', 'ru': 'Отрицательная температура'},
+    'wind speed': {'en': 'Wind speed', 'ru': 'Скорость ветра'},
+    'humidity': {'en': 'Humidity', 'ru': 'Влажность'},
+
 }

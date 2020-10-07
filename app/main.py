@@ -5,10 +5,10 @@ from sqlalchemy.orm.exc import UnmappedInstanceError
 from telebot.apihelper import ApiException
 
 from app import app, db, bot
-from app.data.localization import buttons, inline_buttons
+from app.data.localization import buttons, inline_buttons, ph_info
 from app.telegrambot.credentials import HEROKU_DEPLOY_DOMAIN, NGROK_DEPLOY_DOMAIN, TOKEN
 from app.telegrambot.mastermind import *
-from app.telegrambot.models import User, ReminderTime, PhenomenonTime, Phenomenon, PhenomenonManually
+from app.telegrambot.models import *
 from app.telegrambot.settings import DEBUG
 from app.telegrambot.tele_buttons import phenomena_list, gen_markup_minutes, gen_markup_hours, gen_markup_phenomena, \
     gen_markup_language, call_main_keyboard, call_settings_keyboard, gen_markup_phenomena_manually, \
@@ -141,10 +141,10 @@ def button_daily(message):
 
 # Handle '/daily' (setting a daily reminder)
 def set_daily(new_reminder, hours, minutes, ):
-    if hours is None or minutes is None:
-        db.session.delete(new_reminder)
-        db.session.commit()
-        return
+    # if hours is None or minutes is None:
+    #     db.session.delete(new_reminder)
+    #     db.session.commit()
+    #     return
     job = sched.add_job(
         daily_info, args=[new_reminder.user_id, f'{hours}.{minutes}'], trigger='cron', hour=hours, minute=minutes
     )
@@ -182,9 +182,9 @@ def button_phenomena(message, ):
 
 
 # Handle phenomenon reminder
-def set_phenomenon_time(hours, minutes, user_id):
+def set_phenomenon_time(new_reminder, hours, minutes):
+    user_id = new_reminder.user_id
     job = sched.add_job(phenomenon_info, args=[user_id], trigger='cron', hour=hours, minute=minutes, )
-    new_reminder = PhenomenonTime.query.filter_by(user_id=user_id).first()
     new_reminder.job_id = job.id
     db.session.commit()
 
@@ -192,84 +192,113 @@ def set_phenomenon_time(hours, minutes, user_id):
         sched.start()
 
 
+# Handle phenomenon reminder (sending a reminder)
+def phenomenon_info(user_id):
+    user = User.query.filter_by(id=user_id).first()
+    lang = user.language
+    next_day_max_val = {'temp_positive': 0, 'temp_negative': 0, 'condition': [], 'wind': 0, 'humidity': 0}
+    next_day_info = get_next_day(user.city_name, user.language, phenomenon_info=True)
+    for day_part_info in next_day_info.values():
+        if '+' in day_part_info['daypart_temp']:  # temp_positive
+            temp_positive = int(day_part_info['daypart_temp'].split('+')[-1].replace('°', ''))
+            if temp_positive > next_day_max_val['temp_positive']:
+                next_day_max_val['temp_positive'] = temp_positive
+        elif '-' in day_part_info['daypart_temp']:  # temp_negative
+            daypart_temp_negative = int(day_part_info['daypart_temp'].split('-')[-1].replace('°', ''))
+            if daypart_temp_negative > next_day_max_val['temp_negative']:
+                next_day_max_val['temp_negative'] = daypart_temp_negative
+
+        condition = day_part_info['daypart_condition']  # condition
+        next_day_max_val['condition'] += [condition.lower()]
+
+        wind = float(day_part_info['daypart_wind'].replace(',', '.'))  # wind
+        if wind > next_day_max_val['wind']:
+            next_day_max_val['wind'] = wind
+
+        humidity = int(day_part_info['daypart_humidity'].replace('%', ''))  # humidity
+        if humidity > next_day_max_val['humidity']:
+            next_day_max_val['humidity'] = humidity
+
+    temp_positive = next_day_max_val['temp_positive']
+    temp_negative = next_day_max_val['temp_negative']
+    condition = next_day_max_val['condition']
+    wind = next_day_max_val['wind']
+    humidity = next_day_max_val['humidity']
+
+    text = ''
+    all_phenomena = Phenomenon.query.filter_by(user_id=user.id).all()
+    for phenomenon in all_phenomena:
+        existing_ph = ph_info[phenomenon.phenomenon][lang]
+        if existing_ph in condition:
+            val_and_unit = condition
+            pass
+        elif existing_ph == ph_info["strong wind"][lang]:
+            if 29 >= wind >= 12:
+                val_and_unit = f'{wind} {info[lang][10]}'
+                pass
+            else:
+                continue
+        elif existing_ph == ph_info["hurricane"][lang]:
+            if wind >= 30:
+                val_and_unit = f'{wind} {info[lang][10]}'
+                pass
+            else:
+                continue
+        elif existing_ph == ph_info["intense heat"][lang]:
+            if temp_positive >= 30:
+                val_and_unit = f'+{temp_positive}°C'
+                pass
+            else:
+                continue
+        else:
+            continue
+        text += f'\n{existing_ph.capitalize()} {val_and_unit}'
+
+    all_man_phenomena = PhenomenonManually.query.filter_by(user_id=user_id).all()
+    for man_ph in all_man_phenomena:
+        ph = ph_info[man_ph.phenomenon][lang]
+        val = man_ph.value
+        if ph == ph_info['positive temperature'][lang]:
+            if val <= temp_positive:
+                val_and_unit = f'+{temp_positive}°C'
+                pass
+            else:
+                continue
+        elif ph == ph_info['negative temperature'][lang]:
+            if val <= temp_negative:
+                val_and_unit = f'-{temp_negative}°C'
+                pass
+            else:
+                continue
+        elif ph == ph_info['wind speed'][lang]:
+            if val <= wind:
+                val_and_unit = f'{wind} {info[lang][10]}'
+                pass
+            else:
+                continue
+        elif ph == ph_info['humidity'][lang]:
+            if val <= humidity:
+                val_and_unit = f'{humidity}%'
+                pass
+            else:
+                continue
+        else:
+            continue
+        if ph == ph_info['positive temperature'][lang] or ph == ph_info['negative temperature'][lang]:
+            ph = info[lang][11]
+        text += f'\n{ph.capitalize()} {val_and_unit}'
+
+    if text:
+        response_msg = f'<b>{hints["phenomenon tomorrow"][user.language]}</b>'
+        response_msg += text
+        bot.send_message(user.chat_id, text=response_msg, parse_mode='html')
+
+
 # Handle delete phenomenon reminder
 def delete_ph_time_jobs(user_id):
     ph_reminders = PhenomenonTime.query.filter_by(user_id=user_id).all()
     for reminder in ph_reminders:
         sched.remove_job(job_id=reminder.job_id)
-
-
-# Handle phenomenon reminder (sending a reminder)
-def phenomenon_info(user_id):
-    user = User.query.filter_by(id=user_id).first()
-    lang = user.language
-    all_phenomena = Phenomenon.query.filter_by(user_id=user.id).all()
-    next_day_info = get_next_day(user.city_name, user.language, phenomenon_info=True)
-    next_day_dict = {'daypart_temp_positive': 0, 'daypart_temp_negative': 0, 'daypart_condition': [], 'daypart_wind': 0}
-    for day_dart_info in next_day_info.values():
-        if '+' in day_dart_info['weather_daypart_temp']:
-            daypart_temp_positive = int(day_dart_info['weather_daypart_temp'].split('+')[-1].replace('°', ''))
-            if daypart_temp_positive > next_day_dict['daypart_temp_positive']:
-                next_day_dict['daypart_temp_positive'] = daypart_temp_positive
-        elif '-' in day_dart_info['weather_daypart_temp']:
-            daypart_temp_negative = int(day_dart_info['weather_daypart_temp'].split('-')[-1].replace('°', ''))
-            if daypart_temp_negative > next_day_dict['daypart_temp_negative']:
-                next_day_dict['daypart_temp_negative'] = daypart_temp_negative
-
-        daypart_condition = day_dart_info['weather_daypart_condition']
-        next_day_dict['daypart_condition'] += [daypart_condition.lower()]
-
-        daypart_wind = float(day_dart_info['weather_daypart_wind'].replace(',', '.'))
-        if daypart_wind > next_day_dict['daypart_wind']:
-            next_day_dict['daypart_wind'] = daypart_wind
-
-    daypart_temp_positive = next_day_dict['daypart_temp']
-    daypart_condition = next_day_dict['daypart_condition']
-    daypart_wind = next_day_dict['daypart_wind']
-
-    for phenomenon in all_phenomena:
-        existing_phenomenon = phenomenon.phenomenon
-        if existing_phenomenon in daypart_condition:
-            pass
-        elif existing_phenomenon == "strong wind":
-            if 29 >= daypart_wind >= 12:
-                pass
-            else:
-                continue
-        elif existing_phenomenon == "hurricane":
-            if daypart_wind >= 30:
-                pass
-            else:
-                continue
-        elif existing_phenomenon == "intense heat":
-            if daypart_temp_positive:
-                if daypart_temp_positive >= 30:
-                    pass
-                else:
-                    continue
-            else:
-                continue
-        # elif existing_phenomenon == "intense heat":
-        #     if daypart_temp_positive:
-        #         if daypart_temp_positive >= 30:
-        #             pass
-        #         else:
-        #             continue
-        #     else:
-        #         continue
-        else:
-            continue
-
-        if lang == 'ru':
-            response_message = f'{hints["phenomenon tomorrow"][user.language]} {existing_phenomenon}'
-        else:
-            response_message = f'{existing_phenomenon.capitalize()} {hints["phenomenon tomorrow"][user.language]}'
-        bot.send_message(user.chat_id, text=response_message)
-
-
-# # Handle '/daily'
-# def remove_daily(job_id):
-#     sched.remove_job(job_id=job_id)
 
 
 # Handle '/daily'
@@ -282,7 +311,7 @@ def back_up_reminders():
 
     phenomenon_reminders = PhenomenonTime.query.all()
     for ph_reminder in phenomenon_reminders:
-        set_phenomenon_time(ph_reminder.hours, ph_reminder.minutes, ph_reminder.user_id)
+        set_phenomenon_time(ph_reminder, ph_reminder.hours, ph_reminder.minutes)
 
 
 # Handle button 'city'
@@ -351,10 +380,57 @@ def button_language(message, ):
     bot.send_message(chat_id=chat_id, text=response, reply_markup=gen_markup_language(user_id=user.id))
 
 
+# Handle button 'info'
+@bot.message_handler(
+    func=lambda message: message.text == buttons['info']['en'] or message.text == buttons['info']['ru'])
+def button_info(message, ):
+    user_data = get_user_data(message)
+    user_id = user_data['user'].id
+    lang = user_data['lang']
+    all_phenomena = Phenomenon.query.filter_by(user_id=user_id).all()
+    all_man_phenomena = PhenomenonManually.query.filter_by(user_id=user_id).all()
+    all_daily = ReminderTime.query.filter_by(user_id=user_id).all()
+
+    daily_text = ''
+    for daily in all_daily:
+        daily_text += f'{daily.hours}:{daily.minutes}\n'
+    if not daily_text:
+        daily_text = 'not set' + '\n'
+
+    ph_text = ''
+    for ph in all_phenomena:
+        ph_text += f'{ph.phenomenon.capitalize()}\n'
+    if not ph_text:
+        ph_text = 'empty' + '\n'
+
+    man_ph_text = ''
+    for man_ph in all_man_phenomena:
+        man_ph_text += f'{man_ph.phenomenon.capitalize()} - {man_ph.value}\n'
+    if not man_ph_text:
+        man_ph_text = 'empty' + '\n'
+
+    daily_btn = buttons["daily"][lang]
+    ph_btn = buttons["phenomena"][lang]
+    man_ph_btn = inline_buttons["manually"][lang]
+    ph_time = PhenomenonTime.query.filter_by(user_id=user_id).first()
+
+    try:
+        ph_time = f'{ph_time.hours}:{ph_time.minutes}'
+    except AttributeError as e:
+        logger.warning(f'Time was not set\n{repr(e)}')
+        ph_time = 'not set'
+
+    response = f'<b>{daily_btn}:</b>\n<b>Время:</b>\n{daily_text}' \
+               f'\n<b>{ph_btn}:</b>\n{ph_text}' \
+               f'\n<b>{man_ph_btn}:</b>\n{man_ph_text}' \
+               f'\n<b>Время:</b>\n{ph_time}'
+    bot.send_message(chat_id=message.chat.id, text=response, parse_mode='html')
+
+
 # Handle button 'help'
 @bot.message_handler(
     func=lambda message: message.text == buttons['help']['en'] or message.text == buttons['help']['ru'])
-def command_help(message, ):
+def button_help(message, ):
     user_data = get_user_data(message)
     chat_id = user_data['chat_id']
     lang = user_data['lang']
@@ -450,16 +526,16 @@ def callback_phenomenon_min(call):
     ph_reminders = PhenomenonTime.query.filter_by(user_id=user_id).all()
     for reminder in ph_reminders:
         db.session.delete(reminder)
+    db.session.commit()
 
     if phenomenon:
         text = f"{hints['schedule delete'][lang]}"
     else:
         new_phenomenon = PhenomenonTime(user_id=user_id, hours=phenomenon_hours, minutes=phenomenon_minutes)
-        db.session.add(new_phenomenon)
-        set_phenomenon_time(new_phenomenon.hours, new_phenomenon.minutes, user_id)
+        db.session.add(new_phenomenon)  # commits in set_phenomenon_time func
+        set_phenomenon_time(new_phenomenon, new_phenomenon.hours, new_phenomenon.minutes)
         text = f"{hints['schedule set'][lang]} {phenomenon_hours}:{phenomenon_minutes}"
 
-    db.session.commit()
 
     callback_phenomenon_hr(call)
     bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=text)
@@ -478,18 +554,13 @@ def callback_button_manually(call):
     )
 
 
-callback_query_ph_manually = {}
-
-
 # handle phenomenon manually db
 @bot.callback_query_handler(func=lambda call: "manually" in call.data)
 def callback_phenomenon_manually(call, intro=True):
     global callback_query_ph_manually
     callback_query_ph_manually = call
     user = User.query.filter_by(chat_id=call.from_user.id).first()
-    user_id = user.id
     lang = user.language
-    ph_data = call.data[9:]
 
     if intro:  # if callback_phenomenon_manually called first time
         text = f"{hints['phenomena temp set'][lang]}\n{hints['num expected'][lang]}"
@@ -532,8 +603,6 @@ def add_phenomenon_manually(message):
                 chat_id, f"{ph_data.capitalize()} {hints['phenomenon delete'][lang]}",
                 reply_markup=gen_markup_phenomena_manually(user.id, lang))
 
-            # return bot.answer_callback_query(callback_query_id=callback_query_ph_manually.id, show_alert=False, text='text')
-
     elif ph_data in phenomena_manually_list:  # if user enters a wrong number
         text = None
         if ph_data in phenomena_manually_list[0] or ph_data in phenomena_manually_list[2:]:
@@ -544,7 +613,6 @@ def add_phenomenon_manually(message):
         if text:
             bot.send_message(chat_id, text)
             return callback_phenomenon_manually(callback_query_ph_manually, intro=False)
-
 
     try:  # add value to db
         phenomenon.value = msg
@@ -720,5 +788,6 @@ def callback_inline_language(call):
         bot.send_message(chat_id=call.message.chat.id, text=f'{hints["lang chosen"][new_lang]}',
                          reply_markup=call_settings_keyboard(lang=new_lang))
 
-    if __name__ == '__main__':
-        phenomenon_info(1)
+
+if __name__ == '__main__':
+    phenomenon_info(1)
