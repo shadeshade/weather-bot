@@ -29,7 +29,7 @@ inline_buttons = {
     'all phenomena': {'en': 'All phenomena', 'ru': 'Все события'},
     'set time': {'en': 'Set time', 'ru': 'Изменить время'},
     'back': {'en': '↩ Back', 'ru': '↩ Назад'},
-    'remove all daily': {'en': 'Remove all', 'ru': 'Удалить все'},
+    'remove all': {'en': 'Remove all', 'ru': 'Удалить все'},
 }
 
 hints = {
@@ -52,6 +52,9 @@ hints = {
     'phenomena manually intro': {
         'en': 'Here you can configure phenomena in more detail',
         'ru': 'Здесь вы можете настроить события более детально'},
+        'remove manually': {
+        'en': 'All phenomena removed',
+        'ru': 'Все события удалены'},
     'num expected': {
         'en': 'Enter a number to set the temperature',
         'ru': 'Чтобы установить температуру, введите число'},
@@ -63,7 +66,7 @@ hints = {
         'ru': 'Число должно быть отрицательным'},
     'cancel': {'en': 'Canceled', 'ru': 'Отменено'},
     'phenomena temp set': {
-        'en': 'I will notify you if a certain temperature is expected tomorrow',
+        'en': 'I will notify you if a certain temperature is expected tomorrow.',
         'ru': 'Я уведомлю вас если завтра будет ожидаться установленная температура'},
     'phenomenon set del': {'en': 'The phenomenon', 'ru': 'Cобытие '},
     'phenomenon set': {'en': 'was set', 'ru': 'добавлено'},

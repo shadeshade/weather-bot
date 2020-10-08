@@ -12,7 +12,7 @@ from app.telegrambot.models import *
 from app.telegrambot.settings import DEBUG
 from app.telegrambot.tele_buttons import phenomena_list, gen_markup_minutes, gen_markup_hours, gen_markup_phenomena, \
     gen_markup_language, call_main_keyboard, call_settings_keyboard, gen_markup_phenomena_manually, \
-    phenomena_manually_list
+    ph_manually_list
 
 sched = BackgroundScheduler()
 
@@ -429,7 +429,7 @@ def button_info(message, ):
     try:
         hours = ph_time.hours
         minutes = ph_time.minutes
-        if len(str(hours))==1:
+        if len(str(hours)) == 1:
             hours = f'{0}{hours}'
         if minutes == 0:
             minutes = '00'
@@ -554,7 +554,6 @@ def callback_phenomenon_min(call):
         set_phenomenon_time(new_phenomenon, new_phenomenon.hours, new_phenomenon.minutes)
         text = f"{hints['schedule set'][lang]} {phenomenon_hours}:{phenomenon_minutes}"
 
-
     callback_phenomenon_hr(call)
     bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=text)
 
@@ -573,7 +572,8 @@ def callback_button_manually(call):
 
 
 # handle phenomenon manually db
-@bot.callback_query_handler(func=lambda call: "manually" in call.data)
+@bot.callback_query_handler(
+    func=lambda call: ("manually" in call.data and call.data != "manually remove all" and call.data != "manually back"))
 def callback_phenomenon_manually(call, intro=True):
     global callback_query_ph_manually
     callback_query_ph_manually = call
@@ -621,9 +621,9 @@ def add_phenomenon_manually(message):
                 chat_id, f"{ph_data.capitalize()} {hints['phenomenon delete'][lang]}",
                 reply_markup=gen_markup_phenomena_manually(user.id, lang))
 
-    elif ph_data in phenomena_manually_list:  # if user enters a wrong number
+    elif ph_data in ph_manually_list:  # if user enters a wrong number
         text = None
-        if ph_data in phenomena_manually_list[0] or ph_data in phenomena_manually_list[2:]:
+        if ph_data in ph_manually_list[0] or ph_data in ph_manually_list[2:]:
             if msg < 0:
                 text = f"{hints['num pos expected'][lang]}"
         elif ph_data == 'negative temperature' and msg > 0:
@@ -645,17 +645,53 @@ def add_phenomenon_manually(message):
             reply_markup=gen_markup_phenomena_manually(user.id, lang))
 
 
-# handle all phenomena db
-@bot.callback_query_handler(func=lambda call: call.data == "all phenomena")
-def callback_all_phenomena(call):
-    """"add all phenomena to db"""
+# handle all manually phenomena db
+@bot.callback_query_handler(func=lambda call: call.data == "manually remove all")
+def callback_all_manually_phenomena(call):
+    """add all man phenomena to db"""
     user = User.query.filter_by(chat_id=call.from_user.id).first()
     user_id = user.id
     lang = user.language
 
-    phenomena_data = Phenomenon.query.filter_by(user_id=user_id).all()
-    if len(phenomena_data) > 6:
-        for ph in phenomena_data:
+    all_ph_from_db = PhenomenonManually.query.filter_by(user_id=user_id).all()
+    for ph in all_ph_from_db:
+        db.session.delete(ph)
+    text = hints['all untick'][lang]
+    db.session.commit()
+
+    try:
+        bot.edit_message_text(
+            chat_id=call.message.chat.id, message_id=call.message.message_id,
+            text=hints['phenomena manually intro'][lang],
+            reply_markup=gen_markup_phenomena_manually(user_id, lang))
+    except:
+        pass
+    finally:
+        bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=f"{hints['remove manually'][lang]}")
+
+
+# handle all manually phenomena db
+@bot.callback_query_handler(func=lambda call: call.data == "manually back")
+def callback_back_manually_phenomena(call):
+    """add all man phenomena to db"""
+    user = User.query.filter_by(chat_id=call.from_user.id).first()
+    user_id = user.id
+    lang = user.language
+    bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                          text=hints['phenomena intro'][lang], reply_markup=gen_markup_phenomena(user.id, lang))
+
+
+# handle inline button 'all phenomena'
+@bot.callback_query_handler(func=lambda call: call.data == "all phenomena")
+def callback_all_phenomena(call):
+    """add all phenomena to db"""
+    user = User.query.filter_by(chat_id=call.from_user.id).first()
+    user_id = user.id
+    lang = user.language
+
+    all_ph_from_db = Phenomenon.query.filter_by(user_id=user_id).all()
+    if len(all_ph_from_db) == 7:
+        for ph in all_ph_from_db:
             db.session.delete(ph)
         text = hints['all untick'][lang]
     else:
@@ -768,7 +804,7 @@ def callback_inline_back(call):
                           reply_markup=gen_markup_daily(user_id))
 
 
-@bot.callback_query_handler(func=lambda call: "remove all daily" in call.data)
+@bot.callback_query_handler(func=lambda call: call.data == "daily remove all")
 def callback_remove_all_daily(call):
     user = User.query.filter_by(chat_id=call.from_user.id).first()
     lang = user.language
@@ -778,10 +814,14 @@ def callback_remove_all_daily(call):
         sched.remove_job(job_id=reminder.job_id)  # remove the time from schedule
         db.session.delete(reminder)  # remove the time from db
     db.session.commit()
-
-    bot.edit_message_text(
-        chat_id=call.message.chat.id, message_id=call.message.message_id, text=f"{hints['schedule delete'][lang]}",
-        reply_markup=gen_markup_hours(user_id=user.id, model=ReminderTime, lang=lang))
+    try:
+        bot.edit_message_text(
+            chat_id=call.message.chat.id, message_id=call.message.message_id, text=f"{hints['time daily'][lang]}",
+            reply_markup=gen_markup_hours(user_id=user.id, model=ReminderTime, lang=lang))
+    except:
+        pass
+    finally:
+        bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=f"{hints['schedule delete'][lang]}")
 
 
 # Handle button 'language'

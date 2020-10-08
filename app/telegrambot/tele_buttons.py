@@ -67,15 +67,19 @@ def gen_markup_phenomena(user_id, lang):
     return markup
 
 
-phenomena_manually_list = ['positive temperature', 'negative temperature', 'wind speed', 'humidity']
+ph_manually_list = ['positive temperature', 'negative temperature', 'wind speed', 'humidity']
+additional_btns = ['remove all', 'back']
+
+
+# ph_manually_list_extended = ph_manually_list+additional_btns
 
 # handle phenomenon inline keyboard
 def gen_markup_phenomena_manually(user_id, lang):
     markup = InlineKeyboardMarkup(row_width=1)
-    for idx in range(0, len(phenomena_manually_list) - 1, 2):
+    for idx in range(0, len(ph_manually_list) - 1, 2):
         temp_button_dict = {}
         for temp_btn in temp_buttons[:2]:
-            phenomenon = phenomena_manually_list[idx]
+            phenomenon = ph_manually_list[idx]
             idx += 1
             if PhenomenonManually.query.filter_by(user_id=user_id, phenomenon=phenomenon).first():
                 tick = '✅ '
@@ -85,6 +89,13 @@ def gen_markup_phenomena_manually(user_id, lang):
                                                               callback_data=f"manually {phenomenon}")
         button_values = [v for k, v in temp_button_dict.items()]
         markup.add(button_values[0], button_values[1])
+    markup.row_width = 2
+    markup.add(
+        InlineKeyboardButton(
+            f"{inline_buttons[additional_btns[0]][lang]}", callback_data=f"manually {additional_btns[0]}"),
+        InlineKeyboardButton(
+            f"{inline_buttons[additional_btns[1]][lang]}", callback_data=f"manually {additional_btns[1]}")
+    )
     return markup
 
 
@@ -103,9 +114,11 @@ def gen_markup_hours(user_id, model, lang, callback='', ):
         button_values = [v for k, v in temp_button_dict.items()]
         markup.add(button_values[0], button_values[1], button_values[2], button_values[3])
     if callback == '_ph':
-        markup.add(InlineKeyboardButton(inline_buttons['back'][lang], callback_data=f"back_to{callback}"))
+        markup.add(InlineKeyboardButton(
+            inline_buttons['back'][lang], callback_data=f"back_to{callback}"))
     else:
-        markup.add(InlineKeyboardButton(inline_buttons['remove all daily'][lang], callback_data="remove all daily"))
+        markup.add(InlineKeyboardButton(
+            f"{inline_buttons['remove all'][lang]}", callback_data="daily remove all"))
     return markup
 
 
