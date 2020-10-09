@@ -12,7 +12,7 @@ with open(os.path.join(DATA_DIR, 'temp_cities_db.json'), 'r', encoding='utf-8') 
     for k, v in data.items():
         if ' ' in v:
             v = v.replace(' ', '-')
-        if '('  in v:
+        if '(' in v:
             v = v.replace('(', '')
         if ')' in v:
             v = v.replace(')', '')

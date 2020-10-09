@@ -10,5 +10,3 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///bot.db'
 db = SQLAlchemy(app)
 bot = telebot.TeleBot(TOKEN)
-
-# from app import main

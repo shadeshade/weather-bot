@@ -3,8 +3,8 @@ from app import db
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(32), unique=True, nullable=False)
-    chat_id = db.Column(db.Integer, unique=True, nullable=False)
+    username = db.Column(db.String(32))
+    chat_id = db.Column(db.Integer, nullable=False)
     city_name = db.Column(db.String(20), )
     reminder_time = db.relationship('ReminderTime', backref='telegram_user', lazy=True)
     phenomenon_time = db.relationship('PhenomenonTime', backref='telegram_user', lazy=True)
@@ -19,7 +19,7 @@ class ReminderTime(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     hours = db.Column(db.Integer)
     minutes = db.Column(db.Integer)
-    job_id = db.Column(db.Integer)
+    job_id = db.Column(db.Integer, unique=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
     def __repr__(self):
@@ -30,7 +30,7 @@ class PhenomenonTime(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     hours = db.Column(db.Integer)
     minutes = db.Column(db.Integer)
-    job_id = db.Column(db.Integer)
+    job_id = db.Column(db.Integer, unique=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
     def __repr__(self):
@@ -39,16 +39,18 @@ class PhenomenonTime(db.Model):
 
 class Phenomenon(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    phenomenon = db.Column(db.String)
+    phenomenon = db.Column(db.String, unique=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
     def __repr__(self):
         return f"Phenomenon({self.phenomenon})"
 
 
+class PhenomenonManually(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    phenomenon = db.Column(db.String, unique=True)
+    value = db.Column(db.Integer)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
-
-"""
-  '{self.chat_id}','{self.city_name}',
-user1 = User(username='fea', chat_id=142142412, city_name='fdadfafa', )
-"""
+    def __repr__(self):
+        return f"Phenomenon{self.phenomenon} is set to {self.value}"
