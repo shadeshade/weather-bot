@@ -1,4 +1,0 @@
-SERVER_IP = '127.0.0.1'
-PORT = '8443'
-DEBUG = True
-# HOST = '0.0.0.0'
