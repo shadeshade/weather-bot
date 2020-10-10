@@ -1,12 +1,7 @@
-../venv
-/shade-weather-telegram-bot/
-/.idea
+venv
+.idea
 __pycache__
-credentials.py
-weather.py
-scratch.py
 ngrok.exe
-/app/.env
-/app/bot.db
-/app/log.log
-/app/111.py
+.env
+*.log
+*.db
