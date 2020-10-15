@@ -27,17 +27,22 @@ Now go back to the deploy tab and proceed with the steps:
 
 #### (lines: 39-60) todo: remake description according to [this comment](https://github.com/shadeshade/weather_bot/issues/41#issuecomment-706539150)
 
-* Initialize a git repository in our directory
+Here we clone our repository and open 
+in development environment:
 ```
-git init
-heroku git:remote -a {heroku-project-name}
+git clone "https://github.com/shadeshade/weather_bot.git"
+cd weather_bot
+```
+Create an empty app on Heroku:
+```
+heroku create
+git remote -v
 ```
 
-* Deploy the app
+Now we can use git to push our code to the Heroku remote:
 ```
-git add .
-git commit -m "first commit"
 git push heroku master
+heroku open
 ```
 
 At this point you will see the building progress in your terminal, 
@@ -49,11 +54,10 @@ remote:        https://project-name.herokuapp.com/ deployed to Heroku
 remote:
 remote: Verifying deploy... done.
 ```
-
-- Now go to the app page (the link of the domain you copied before) 
-and add to the end of the link `/setwebhook` so that the address will be 
-something like `https://appname.herokuapp.com/setwebhook`, if you see `webhook 
-setup ok` then you are ready to go!
+Now go to the app page (the link of the domain you copied before) and add 
+to the end of the link /setwebhook so that the address will be something 
+like https://appname.herokuapp.com/setwebhook, if you see webhook setup 
+ok then you are ready to go!
 
 # Deploying on Local Host (Ngrok)
  

@@ -6,10 +6,9 @@ from telebot.apihelper import ApiException
 
 from app import app, db, bot
 from app.data.localization import buttons, inline_buttons, ph_info
-from app.telegrambot.credentials import HEROKU_DEPLOY_DOMAIN, NGROK_DEPLOY_DOMAIN, TOKEN
+from app.telegrambot.credentials import HEROKU_DEPLOY_DOMAIN, NGROK_DEPLOY_DOMAIN, TOKEN, DEBUG
 from app.telegrambot.mastermind import *
 from app.telegrambot.models import *
-from app.telegrambot.settings import DEBUG
 from app.telegrambot.tele_buttons import phenomena_list, gen_markup_minutes, gen_markup_hours, gen_markup_phenomena, \
     gen_markup_language, call_main_keyboard, call_settings_keyboard, gen_markup_phenomena_manually, \
     ph_manually_list
@@ -453,7 +452,7 @@ def button_help(message, ):
     chat_id = user_data['chat_id']
     lang = user_data['lang']
 
-    response = get_help(lang)
+    response = hints['help intro'][lang]
     bot.send_message(chat_id, text=response, parse_mode='html')
 
 

@@ -114,7 +114,7 @@ def get_response(city_name, lang, timestamp):
     message_part1 = f'<i>{header}</i>\n\n' \
                     f'<b>{info[lang][1]}: {temp}°; {info[lang][3]}: {feels_like}\n' \
                     f'{info[lang][2]}: {wind_speed_and_direction}; {ph_info["humidity"][lang]}: {humidity}\n' \
-                    f'{cond} {weather_cond}</b> \n\n\n'
+                    f'{cond} {weather_cond}</b> \n\n'
 
     message_part2 = f'{info[lang][4]}: {daylight_hours}\n' \
                     f'{info[lang][5]}: {sunrise} - {sunset}\n'
@@ -345,10 +345,10 @@ def get_extended_info(city_name, command, lang):
     return daypart_dict
 
 
-def get_help(lang):
-    """returns commands list"""
-    text = hints['help intro'][lang]
-    return text
+# def get_help(lang):
+#     """returns commands list"""
+#     text = hints['help intro'][lang]
+#     return text
 
 
 def get_cities_data(city):
