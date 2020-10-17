@@ -4,15 +4,21 @@ from app.data.localization import inline_buttons, buttons
 from app.telegrambot.models import Phenomenon, User, PhenomenonManually
 
 temp_buttons = ['temp_btn1', 'temp_btn2', 'temp_btn3', 'temp_btn4']
+main_keyboard_buttons = ['weather now', 'for tomorrow', 'for a week', 'settings', 'daily', 'phenomena', 'city',
+                         'language', 'info', 'help', 'menu']
 phenomena_list = ["strong wind", "hailstorm", "hurricane", "thunderstorm", "rain", "heavy rain", "intense heat"]
 
 
 def call_main_keyboard(lang):
     keyboard = ReplyKeyboardMarkup(one_time_keyboard=False, resize_keyboard=True)
-    btn1 = KeyboardButton(buttons['weather now'][lang])
-    btn2 = KeyboardButton(buttons['for tomorrow'][lang])
-    btn3 = KeyboardButton(buttons['for a week'][lang])
-    btn4 = KeyboardButton(buttons['settings'][lang])
+    button_list = []
+    for idx in range(len(main_keyboard_buttons) - 7):
+        btn = KeyboardButton(buttons[main_keyboard_buttons[idx]][lang])
+        button_list.append(btn)
+    btn1 = button_list[0]
+    btn2 = button_list[1]
+    btn3 = button_list[2]
+    btn4 = button_list[3]
     keyboard.add(btn1, btn2)
     keyboard.add(btn3, btn4)
     return keyboard
