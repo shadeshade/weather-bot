@@ -4,40 +4,42 @@ from app.data.localization import inline_buttons, buttons
 from app.telegrambot.models import Phenomenon, User, PhenomenonManually
 
 temp_buttons = ['temp_btn1', 'temp_btn2', 'temp_btn3', 'temp_btn4']
-main_keyboard_buttons = ['weather now', 'for tomorrow', 'for a week', 'settings', 'daily', 'phenomena', 'city',
-                         'language', 'info', 'help', 'menu']
 phenomena_list = ["strong wind", "hailstorm", "hurricane", "thunderstorm", "rain", "heavy rain", "intense heat"]
+
+
+def get_main_keyboard_btns(lang, settings=False):
+    """genarate button list for main keyboard"""
+    main_keyboard_buttons = ['weather now', 'for tomorrow', 'for a week', 'settings', 'daily', 'phenomena', 'city',
+                             'language', 'info', 'help', 'menu']
+    button_list = []
+    for idx in range(len(main_keyboard_buttons)):
+        btn = KeyboardButton(buttons[main_keyboard_buttons[idx]][lang])
+        button_list.append(btn)
+    result = []
+    if not settings:
+        for idx in range(4):
+            result.append(button_list[idx])
+    else:
+        for idx in range(4, 11):
+            result.append(button_list[idx])
+    return result
 
 
 def call_main_keyboard(lang):
     keyboard = ReplyKeyboardMarkup(one_time_keyboard=False, resize_keyboard=True)
-    button_list = []
-    for idx in range(len(main_keyboard_buttons) - 7):
-        btn = KeyboardButton(buttons[main_keyboard_buttons[idx]][lang])
-        button_list.append(btn)
-    btn1 = button_list[0]
-    btn2 = button_list[1]
-    btn3 = button_list[2]
-    btn4 = button_list[3]
-    keyboard.add(btn1, btn2)
-    keyboard.add(btn3, btn4)
+    btns = get_main_keyboard_btns(lang)
+    keyboard.add(btns[0], btns[1])
+    keyboard.add(btns[2], btns[3])
     return keyboard
 
 
 def call_settings_keyboard(lang):
     keyboard = ReplyKeyboardMarkup(one_time_keyboard=False, resize_keyboard=True)
-    btn1 = KeyboardButton(buttons['daily'][lang])
-    btn2 = KeyboardButton(buttons['phenomena'][lang])
-    btn3 = KeyboardButton(buttons['city'][lang])
-    btn4 = KeyboardButton(buttons['language'][lang])
-    btn5 = KeyboardButton(buttons['info'][lang])
-    btn6 = KeyboardButton(buttons['help'][lang])
-    btn7 = KeyboardButton(buttons['menu'][lang])
-
-    keyboard.add(btn1, btn2, )
-    keyboard.add(btn3, btn4, )
-    keyboard.add(btn5, btn6)
-    keyboard.add(btn7)
+    btns = get_main_keyboard_btns(lang, settings=True)
+    keyboard.add(btns[0], btns[1])
+    keyboard.add(btns[2], btns[3])
+    keyboard.add(btns[4], btns[5])
+    keyboard.add(btns[6])
     return keyboard
 
 
@@ -76,8 +78,6 @@ def gen_markup_phenomena(user_id, lang):
 ph_manually_list = ['positive temperature', 'negative temperature', 'wind speed', 'humidity']
 additional_btns = ['remove all', 'back']
 
-
-# ph_manually_list_extended = ph_manually_list+additional_btns
 
 # handle phenomenon inline keyboard
 def gen_markup_phenomena_manually(user_id, lang):
