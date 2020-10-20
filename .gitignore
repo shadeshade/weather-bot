@@ -5,3 +5,4 @@ ngrok.exe
 .env
 *.log
 *.db
+shade-weather-telegram-bot
