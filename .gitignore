@@ -2,7 +2,7 @@ venv
 .idea
 __pycache__
 ngrok.exe
-#.env
+.env
 *.log
 *.db
 shade-weather-telegram-bot
