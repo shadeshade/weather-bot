@@ -97,6 +97,7 @@ hints = {
               ' an upcoming phenomenon.'
               '\n\n<b>City:</b>\nChoose your city.'
               '\n\n<b>Language:</b>\nChoose your language.'
+              '\n\n<b>Info:</b>\nDisplays a message with the phenomena and times you chose.'
               '\n\nAlso you can enter the name of the city and get information without changing the previously set '
               'city',
         'ru': '<b>Привет, ниже приведен список кнопок и их фунции, с которыми я умею работать.</b>'
@@ -108,6 +109,7 @@ hints = {
               '\n\n<b>События:</b>\nВыбрать события и время получения оповещения о предстоящем событии.'
               '\n\n<b>Город:</b>\nВыберите ваш город.'
               '\n\n<b>Язык:</b>\nВыберите ваш язык.'
+              '\n\n<b>Инфо:</b>\nОтображает сообщение с выбранными вами явлениями и временем.'
               '\n\nТакже вы можете ввести название города и получить информацию, не меняя ранее установленный город.'
     },
 }
