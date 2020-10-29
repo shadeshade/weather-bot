@@ -345,12 +345,6 @@ def get_extended_info(city_name, command, lang):
     return daypart_dict
 
 
-# def get_help(lang):
-#     """returns commands list"""
-#     text = hints['help intro'][lang]
-#     return text
-
-
 def get_cities_data(city):
     """return the cities_db dictionary"""
     with open(os.path.join(DATA_DIR, 'cities_db.json'), 'r', encoding='utf-8') as f:
@@ -398,9 +392,4 @@ def get_user_data(message):
 
 
 if __name__ == '__main__':
-    # print(get_daily('маха'))
-    # print(get_response('Питер'))
-    # get_scrap()
-    # get_next_day('moscow')
-    # get_condition('snow')
     pass
