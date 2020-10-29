@@ -38,20 +38,16 @@ def get_update():
 
 # Handle '/start'
 @bot.message_handler(commands=['start'])
-def command_start(message, ):
-    user_data = get_user_data(message)
-    chat_id = user_data['chat_id']
-    lang = user_data['lang']
-    user = user_data['user']
-    username = user_data['username']
-
-    if not user:
-        new_user = User(username=username, chat_id=chat_id, language=lang)
+def command_start(message,):
+    data = get_user_data(message)  # todo: refactor other views the same way
+    if not data['user']:
+        new_user = User(username=data['username'], chat_id=data['chat_id'], language=data['lang'])
         db.session.add(new_user)
         db.session.commit()
 
-    response = get_start(username, lang)
-    bot.send_message(chat_id, text=response, reply_markup=call_main_keyboard(lang), parse_mode='html')
+    response = get_start(data['username'], data['lang'])
+    bot.send_message(data['chat_id'], text=response,
+                     reply_markup=call_main_keyboard(data['lang']), parse_mode='html')
 
 
 # Handle button 'weather now'
@@ -183,7 +179,7 @@ def button_phenomena(message, ):
 # Handle phenomenon reminder
 def set_phenomenon_time(new_reminder, hours, minutes):
     user_id = new_reminder.user_id
-    job = sched.add_job(phenomenon_info, args=[user_id], trigger='cron', hour=hours, minute=minutes, )
+    job = sched.add_job(ph_info, args=[user_id], trigger='cron', hour=hours, minute=minutes, )
     new_reminder.job_id = job.id
     db.session.commit()
 

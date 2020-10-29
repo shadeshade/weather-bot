@@ -11,6 +11,7 @@ from transliterate.exceptions import LanguageDetectionError
 
 from app.data import emoji_conditions
 from app.data.localization import hints, info, ph_info
+from app.data.utils import get_city_data
 from app.telegrambot.models import User
 
 CUR_PATH = os.path.realpath(__file__)
@@ -345,18 +346,10 @@ def get_extended_info(city_name, command, lang):
     return daypart_dict
 
 
-def get_cities_data(city):
-    """return the cities_db dictionary"""
-    with open(os.path.join(DATA_DIR, 'cities_db.json'), 'r', encoding='utf-8') as f:
-        cities_data = json.load(f)
-    content = cities_data[city]
-    return content
-
-
 def transliterate_name(city_to_translit):
     """transliterate a city name in case the name is not in the cities_db"""
     try:
-        city = get_cities_data(city_to_translit.title())
+        city = get_city_data(city_to_translit.title())
     except KeyError as e:
         logger.warning(f'There is no such a city in the db {repr(e)}')
     else:

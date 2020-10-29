@@ -127,6 +127,7 @@ info = {
 }
 
 
+# Localized information about various phenomena
 ph_info = {
     'strong wind': {'en': 'Strong wind', 'ru': 'Сильный ветер'},
     'hailstorm': {'en': 'Hailstorm', 'ru': 'Град'},
