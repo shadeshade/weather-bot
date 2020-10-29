@@ -9,6 +9,8 @@
  on the next day.
 
 # Deploying on Heroku
+
+## todo: check if instruction is valid
 From your dashboard on Heroku create a new app, once you create
  an app it will direct you to the deploy page.
  
@@ -24,8 +26,6 @@ Needed modifications:
 Now go back to the deploy tab and proceed with the steps:
 * login to heroku: `heroku login` . Note that sometimes this method get stuck in waiting for login,
  if this is the case with you, you can login using: `heroku login -i`
-
-#### (lines: 39-60) todo: remake description according to [this comment](https://github.com/shadeshade/weather_bot/issues/41#issuecomment-706539150)
 
 Here we clone our repository and open 
 in development environment:
