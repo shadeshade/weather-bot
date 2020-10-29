@@ -4,10 +4,10 @@ decorator==4.4.2
 flask-sqlalchemy==2.4.4
 future==0.18.2
 gunicorn==20.0.4
-pip-chill==1.0.0
 pytelegrambotapi==3.7.2
 python-dotenv==0.14.0
 requests-html==0.10.0
+Flask==1.1.2
 tornado==6.0.4
 transliterate==1.10.2
 tree==0.2.4

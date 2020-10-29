@@ -4,12 +4,12 @@ from flask import request
 from sqlalchemy.orm.exc import UnmappedInstanceError
 from telebot.apihelper import ApiException
 
-from app import app, db, bot
-from app.data.localization import buttons, inline_buttons, ph_info
-from app.telegrambot.credentials import HEROKU_DEPLOY_DOMAIN, NGROK_DEPLOY_DOMAIN, TOKEN, DEBUG
-from app.telegrambot.mastermind import *
-from app.telegrambot.models import *
-from app.telegrambot.tele_buttons import phenomena_list, gen_markup_minutes, gen_markup_hours, gen_markup_phenomena, \
+from app import app, bot
+from app.data.localization import buttons, inline_buttons
+from app.credentials import HEROKU_DEPLOY_DOMAIN, NGROK_DEPLOY_DOMAIN, TOKEN, DEBUG
+from app.mastermind import *
+from app.models import *
+from app.tele_buttons import phenomena_list, gen_markup_minutes, gen_markup_hours, gen_markup_phenomena, \
     gen_markup_language, call_main_keyboard, call_settings_keyboard, gen_markup_phenomena_manually, \
     ph_manually_list
 
@@ -39,7 +39,7 @@ def get_update():
 # Handle '/start'
 @bot.message_handler(commands=['start'])
 def command_start(message,):
-    data = get_user_data(message)  # todo: refactor other views the same way
+    data = User.get_user_data(message)  # todo: refactor other views the same way
     if not data['user']:
         new_user = User(username=data['username'], chat_id=data['chat_id'], language=data['lang'])
         db.session.add(new_user)
@@ -54,7 +54,7 @@ def command_start(message,):
 @bot.message_handler(
     func=lambda message: message.text == buttons['weather now']['en'] or message.text == buttons['weather now']['ru'])
 def button_weather_now(message, ):
-    user_data = get_user_data(message)
+    user_data = User.get_user_data(message)
     chat_id = user_data['chat_id']
     lang = user_data['lang']
     user = user_data['user']
@@ -71,7 +71,7 @@ def button_weather_now(message, ):
 @bot.message_handler(
     func=lambda message: message.text == buttons['for tomorrow']['en'] or message.text == buttons['for tomorrow']['ru'])
 def button_tomorrow(message, ):
-    user_data = get_user_data(message)
+    user_data = User.get_user_data(message)
     chat_id = user_data['chat_id']
     lang = user_data['lang']
     user = user_data['user']
@@ -88,7 +88,7 @@ def button_tomorrow(message, ):
 @bot.message_handler(
     func=lambda message: message.text == buttons['for a week']['en'] or message.text == buttons['for a week']['ru'])
 def button_week(message, ):
-    user_data = get_user_data(message)
+    user_data = User.get_user_data(message)
     chat_id = user_data['chat_id']
     lang = user_data['lang']
     user = user_data['user']
@@ -105,7 +105,7 @@ def button_week(message, ):
 @bot.message_handler(
     func=lambda message: message.text == buttons['settings']['en'] or message.text == buttons['settings']['ru'])
 def button_settings(message, ):
-    user_data = get_user_data(message)
+    user_data = User.get_user_data(message)
     chat_id = user_data['chat_id']
     lang = user_data['lang']
 
@@ -116,7 +116,7 @@ def button_settings(message, ):
 @bot.message_handler(
     func=lambda message: message.text == buttons['daily']['en'] or message.text == buttons['daily']['ru'])
 def button_daily(message):
-    user_data = get_user_data(message)
+    user_data = User.get_user_data(message)
     chat_id = user_data['chat_id']
     lang = user_data['lang']
     user = user_data['user']
@@ -163,7 +163,7 @@ def daily_info(user_id, set_time):
 @bot.message_handler(
     func=lambda message: message.text == buttons['phenomena']['en'] or message.text == buttons['phenomena']['ru'])
 def button_phenomena(message, ):
-    user_data = get_user_data(message)
+    user_data = User.get_user_data(message)
     chat_id = user_data['chat_id']
     lang = user_data['lang']
     user = user_data['user']
@@ -313,7 +313,7 @@ def back_up_reminders():
 @bot.message_handler(
     func=lambda message: message.text == buttons['city']['en'] or message.text == buttons['city']['ru'])
 def button_city(message, intro=True):
-    user_data = get_user_data(message)
+    user_data = User.get_user_data(message)
     chat_id = user_data['chat_id']
     lang = user_data['lang']
     user = user_data['user']
@@ -360,7 +360,7 @@ def add_city(message):
 @bot.message_handler(
     func=lambda message: message.text == buttons['language']['en'] or message.text == buttons['language']['ru'])
 def button_language(message, ):
-    user_data = get_user_data(message)
+    user_data = User.get_user_data(message)
     chat_id = user_data['chat_id']
     lang = user_data['lang']
     user = user_data['user']
@@ -379,7 +379,7 @@ def button_language(message, ):
 @bot.message_handler(
     func=lambda message: message.text == buttons['info']['en'] or message.text == buttons['info']['ru'])
 def button_info(message, ):
-    user_data = get_user_data(message)
+    user_data = User.get_user_data(message)
     user_id = user_data['user'].id
     lang = user_data['lang']
     all_phenomena = Phenomenon.query.filter_by(user_id=user_id).all()
@@ -444,7 +444,7 @@ def button_info(message, ):
 @bot.message_handler(
     func=lambda message: message.text == buttons['help']['en'] or message.text == buttons['help']['ru'])
 def button_help(message, ):
-    user_data = get_user_data(message)
+    user_data = User.get_user_data(message)
     chat_id = user_data['chat_id']
     lang = user_data['lang']
 
@@ -456,7 +456,7 @@ def button_help(message, ):
 @bot.message_handler(
     func=lambda message: message.text == buttons['menu']['en'] or message.text == buttons['menu']['ru'])
 def button_menu(message, ):
-    user_data = get_user_data(message)
+    user_data = User.get_user_data(message)
     chat_id = user_data['chat_id']
     lang = user_data['lang']
 
@@ -470,7 +470,7 @@ def respond(message):
         sticker = open('app/static/AnimatedSticker.tgs', 'rb')
         return bot.send_sticker(message.chat.id, sticker)
     else:
-        user_data = get_user_data(message)
+        user_data = User.get_user_data(message)
         chat_id = user_data['chat_id']
         lang = user_data['lang']
         user = user_data['user']

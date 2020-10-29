@@ -1,4 +1,5 @@
 from app import db
+from app import logger
 
 
 class User(db.Model):
@@ -13,6 +14,25 @@ class User(db.Model):
 
     def __repr__(self):
         return f"User('{self.username}', '{self.chat_id}', '{self.city_name}')"
+
+    @staticmethod
+    def get_user_data(message):
+        chat_id = message.chat.id
+        user = User.query.filter_by(chat_id=chat_id).first()
+        username = message.from_user.first_name
+        try:
+            lang = user.language
+        except AttributeError as e:
+            logger.warning(e)
+            lang = message.from_user.language_code
+        try:
+            city_name = user.city_name
+        except AttributeError as e:
+            logger.warning(e)
+            city_name = None
+
+        data_dict = {'user': user, 'username': username, 'city_name': city_name, 'chat_id': chat_id, 'lang': lang}
+        return data_dict
 
 
 class ReminderTime(db.Model):

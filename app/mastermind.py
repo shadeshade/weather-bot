@@ -1,6 +1,3 @@
-import json
-import logging
-import os
 from datetime import datetime
 from typing import Dict
 
@@ -12,15 +9,7 @@ from transliterate.exceptions import LanguageDetectionError
 from app.data import emoji_conditions
 from app.data.localization import hints, info, ph_info
 from app.data.utils import get_city_data
-from app.telegrambot.models import User
-
-CUR_PATH = os.path.realpath(__file__)
-BASE_DIR = os.path.dirname(os.path.dirname(CUR_PATH))
-DATA_DIR = os.path.join(BASE_DIR, 'data')
-STATIC_DIR = os.path.join(BASE_DIR, 'static')
-
-logging.basicConfig(filename='log.log', level=logging.DEBUG)
-logger = logging.getLogger()
+from app import logger
 
 
 def get_day_part(ts, sunset):  # timestamp in Unix time
@@ -363,26 +352,3 @@ def transliterate_name(city_to_translit):
         logger.warning(f'The name of the city is not in Russian. ({e})')
         new_name = city_to_translit
     return new_name
-
-
-def get_user_data(message):
-    chat_id = message.chat.id
-    user = User.query.filter_by(chat_id=chat_id).first()
-    username = message.from_user.first_name
-    try:
-        lang = user.language
-    except AttributeError as e:
-        logger.warning(e)
-        lang = message.from_user.language_code
-    try:
-        city_name = user.city_name
-    except AttributeError as e:
-        logger.warning(e)
-        city_name = None
-
-    data_dict = {'user': user, 'username': username, 'city_name': city_name, 'chat_id': chat_id, 'lang': lang}
-    return data_dict
-
-
-if __name__ == '__main__':
-    pass
