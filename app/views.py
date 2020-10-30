@@ -5,13 +5,13 @@ from sqlalchemy.orm.exc import UnmappedInstanceError
 from telebot.apihelper import ApiException
 
 from app import app, bot
-from app.data.localization import buttons, inline_buttons
 from app.credentials import HEROKU_DEPLOY_DOMAIN, NGROK_DEPLOY_DOMAIN, TOKEN, DEBUG
-from app.mastermind import *
-from app.models import *
-from app.tele_buttons import phenomena_list, gen_markup_minutes, gen_markup_hours, gen_markup_phenomena, \
+from app.data.localization import buttons, inline_buttons
+from app.mastermind.formating import *
+from app.mastermind.tele_buttons import phenomena_list, gen_markup_minutes, gen_markup_hours, gen_markup_phenomena, \
     gen_markup_language, call_main_keyboard, call_settings_keyboard, gen_markup_phenomena_manually, \
     ph_manually_list
+from app.models import *
 
 sched = BackgroundScheduler()
 
@@ -54,92 +54,69 @@ def command_start(message,):
 @bot.message_handler(
     func=lambda message: message.text == buttons['weather now']['en'] or message.text == buttons['weather now']['ru'])
 def button_weather_now(message, ):
-    user_data = User.get_user_data(message)
-    chat_id = user_data['chat_id']
-    lang = user_data['lang']
-    user = user_data['user']
-    city_name = user_data['city_name']
+    data = User.get_user_data(message)
 
-    if not user or not city_name:
-        return bot.send_message(chat_id=chat_id, text=hints['no city'][lang], parse_mode='html')
+    if not data['user'] or not data['city_name']:
+        return bot.send_message(chat_id=data['chat_id'], text=hints['no city'][data['lang']], parse_mode='html')
 
-    response = get_response(city_name, lang, message.date)
-    bot.send_message(chat_id=chat_id, text=response, parse_mode='html')
+    response = get_response(data['city_name'], data['lang'], message.date)
+    bot.send_message(chat_id=data['chat_id'], text=response, parse_mode='html')
 
 
 # Handle button 'for tomorrow'
 @bot.message_handler(
     func=lambda message: message.text == buttons['for tomorrow']['en'] or message.text == buttons['for tomorrow']['ru'])
 def button_tomorrow(message, ):
-    user_data = User.get_user_data(message)
-    chat_id = user_data['chat_id']
-    lang = user_data['lang']
-    user = user_data['user']
-    city_name = user_data['city_name']
+    data = User.get_user_data(message)
 
-    if not user or not city_name:
-        return bot.send_message(chat_id=chat_id, text=hints['no city'][lang], parse_mode='html')
+    if not data['user'] or not data['city_name']:
+        return bot.send_message(chat_id=data['chat_id'], text=hints['no city'][data['lang']], parse_mode='html')
 
-    response = get_next_day(city_name, lang, phenomenon_info=False)
-    bot.send_message(chat_id=chat_id, text=response, parse_mode='html')
+    response = get_next_day(data['city_name'], data['lang'], phenomenon_info=False)
+    bot.send_message(chat_id=data['chat_id'], text=response, parse_mode='html')
 
 
 # Handle button 'for a week'
 @bot.message_handler(
     func=lambda message: message.text == buttons['for a week']['en'] or message.text == buttons['for a week']['ru'])
 def button_week(message, ):
-    user_data = User.get_user_data(message)
-    chat_id = user_data['chat_id']
-    lang = user_data['lang']
-    user = user_data['user']
-    city_name = user_data['city_name']
+    data = User.get_user_data(message)
 
-    if not user or not city_name:
-        return bot.send_message(chat_id=chat_id, text=hints['no city'][lang], parse_mode='html')
+    if not data['user'] or not data['city_name']:
+        return bot.send_message(chat_id=data['chat_id'], text=hints['no city'][data['lang']], parse_mode='html')
 
-    response = get_next_week(city=city_name, lang=lang)
-    bot.send_message(chat_id=chat_id, text=response, parse_mode='html')
+    response = get_next_week(city=data['city_name'], lang=data['lang'])
+    bot.send_message(chat_id=data['chat_id'], text=response, parse_mode='html')
 
 
 # Handle button 'settings'
 @bot.message_handler(
     func=lambda message: message.text == buttons['settings']['en'] or message.text == buttons['settings']['ru'])
 def button_settings(message, ):
-    user_data = User.get_user_data(message)
-    chat_id = user_data['chat_id']
-    lang = user_data['lang']
-
-    bot.send_message(chat_id, text=info[lang][9], reply_markup=call_settings_keyboard(lang))
+    data = User.get_user_data(message)
+    bot.send_message(data['chat_id'], text=info[data['lang']][9], reply_markup=call_settings_keyboard(data['lang']))
 
 
 # Handle button 'daily'
 @bot.message_handler(
     func=lambda message: message.text == buttons['daily']['en'] or message.text == buttons['daily']['ru'])
 def button_daily(message):
-    user_data = User.get_user_data(message)
-    chat_id = user_data['chat_id']
-    lang = user_data['lang']
-    user = user_data['user']
-    city_name = user_data['city_name']
+    data = User.get_user_data(message)
 
-    if not user or not city_name:
-        return bot.send_message(chat_id, hints['no city'][lang])
+    if not data['user'] or not data['city_name']:
+        return bot.send_message(data['chat_id'], hints['no city'][data['lang']])
 
     reminders = ReminderTime.query.all()
     for reminder in reminders:
         if reminder.hours is None or reminder.minutes is None:
             db.session.delete(reminder)
             db.session.commit()
-    response = hints['time daily'][lang]
-    bot.send_message(chat_id, text=response, reply_markup=gen_markup_daily(user.id))
+    response = hints['time daily'][data['lang']]
+    bot.send_message(data['chat_id'], text=response, reply_markup=gen_markup_daily(data['user'].id))
 
 
 # Handle '/daily' (setting a daily reminder)
 def set_daily(new_reminder, hours, minutes, ):
-    # if hours is None or minutes is None:
-    #     db.session.delete(new_reminder)
-    #     db.session.commit()
-    #     return
     job = sched.add_job(
         daily_info, args=[new_reminder.user_id, f'{hours}.{minutes}'], trigger='cron', hour=hours, minute=minutes
     )
@@ -163,17 +140,13 @@ def daily_info(user_id, set_time):
 @bot.message_handler(
     func=lambda message: message.text == buttons['phenomena']['en'] or message.text == buttons['phenomena']['ru'])
 def button_phenomena(message, ):
-    user_data = User.get_user_data(message)
-    chat_id = user_data['chat_id']
-    lang = user_data['lang']
-    user = user_data['user']
-    city_name = user_data['city_name']
+    data = User.get_user_data(message)
 
-    if not user or not city_name:
-        return bot.send_message(chat_id, hints['no city'][lang])
+    if not data['user'] or not data['city_name']:
+        return bot.send_message(data['chat_id'], hints['no city'][data['lang']])
 
-    response = hints['phenomena intro'][lang]
-    bot.send_message(chat_id, text=response, reply_markup=gen_markup_phenomena(user.id, lang))
+    response = hints['phenomena intro'][data['lang']]
+    bot.send_message(data['chat_id'], text=response, reply_markup=gen_markup_phenomena(data['user'].id, data['user']))
 
 
 # Handle phenomenon reminder
@@ -313,23 +286,19 @@ def back_up_reminders():
 @bot.message_handler(
     func=lambda message: message.text == buttons['city']['en'] or message.text == buttons['city']['ru'])
 def button_city(message, intro=True):
-    user_data = User.get_user_data(message)
-    chat_id = user_data['chat_id']
-    lang = user_data['lang']
-    user = user_data['user']
-    username = user_data['username']
+    data = User.get_user_data(message)
 
-    if not user:
-        new_user = User(username=username, chat_id=chat_id, language=lang)
+    if not data['user']:
+        new_user = User(username=data['username'], chat_id=data['chat_id'], language=data['lang'])
         db.session.add(new_user)
         db.session.commit()
 
     if intro:  # if button_city called first time
-        text = hints['city intro'][lang]
+        text = hints['city intro'][data['lang']]
     else:  # if user types incorrect city name
-        text = info[lang][0]
+        text = info[data['lang']][0]
 
-    msg = bot.send_message(chat_id=chat_id, text=text)
+    msg = bot.send_message(chat_id=data['chat_id'], text=text)
     bot.register_next_step_handler(message=msg, callback=add_city)
 
 
@@ -360,31 +329,25 @@ def add_city(message):
 @bot.message_handler(
     func=lambda message: message.text == buttons['language']['en'] or message.text == buttons['language']['ru'])
 def button_language(message, ):
-    user_data = User.get_user_data(message)
-    chat_id = user_data['chat_id']
-    lang = user_data['lang']
-    user = user_data['user']
-    username = user_data['username']
+    data = User.get_user_data(message)
 
-    if not user:
-        new_user = User(username=username, chat_id=chat_id, language=lang)
+    if not data['user']:
+        new_user = User(username=data['username'], chat_id=data['chat_id'], language=data['lang'])
         db.session.add(new_user)
         db.session.commit()
 
-    response = hints['lang intro'][lang]
-    bot.send_message(chat_id=chat_id, text=response, reply_markup=gen_markup_language(user_id=user.id))
+    response = hints['lang intro'][data['lang']]
+    bot.send_message(chat_id=data['chat_id'], text=response, reply_markup=gen_markup_language(user_id=data['user'].id))
 
 
 # Handle button 'info'
 @bot.message_handler(
     func=lambda message: message.text == buttons['info']['en'] or message.text == buttons['info']['ru'])
 def button_info(message, ):
-    user_data = User.get_user_data(message)
-    user_id = user_data['user'].id
-    lang = user_data['lang']
-    all_phenomena = Phenomenon.query.filter_by(user_id=user_id).all()
-    all_man_phenomena = PhenomenonManually.query.filter_by(user_id=user_id).all()
-    all_daily = ReminderTime.query.filter_by(user_id=user_id).all()
+    data = User.get_user_data(message)
+    all_phenomena = Phenomenon.query.filter_by(user_id=data['user'].id).all()
+    all_man_phenomena = PhenomenonManually.query.filter_by(user_id=data['user'].id).all()
+    all_daily = ReminderTime.query.filter_by(user_id=data['user'].id).all()
 
     daily_text = ''
     for daily in all_daily:
@@ -396,30 +359,30 @@ def button_info(message, ):
             minutes = '00'
         daily_text += f'{hours}:{minutes}\n'
     if not daily_text:
-        daily_text = f"{info[lang][13]}\n"
+        daily_text = f"{info[data['lang']][13]}\n"
 
     ph_text = ''
     for ph in all_phenomena:
-        ph_text += f'{ph_info[ph.phenomenon][lang]}\n'
+        ph_text += f'{ph_info[ph.phenomenon][data["lang"]]}\n'
     if not ph_text:
-        ph_text = f"{info[lang][13]}\n"
+        ph_text = f"{info[data['lang']][13]}\n"
 
     man_ph_text = ''
     for man_ph in all_man_phenomena:
         if man_ph.phenomenon == ph_info['wind speed']['en'].lower():
-            unit = f' {info[lang][10]}'  # m/s
+            unit = f' {info[data["lang"]][10]}'  # m/s
         elif man_ph.phenomenon == ph_info['humidity']['en'].lower():
             unit = '%'
         else:  # temperature
             unit = '°C'
-        man_ph_text += f'{ph_info[man_ph.phenomenon][lang]}: {man_ph.value}{unit}\n'
+        man_ph_text += f'{ph_info[man_ph.phenomenon][data["lang"]]}: {man_ph.value}{unit}\n'
     if not man_ph_text:
-        man_ph_text = f"{info[lang][13]}\n"
+        man_ph_text = f"{info[data['lang']][13]}\n"
 
-    daily_btn = buttons["daily"][lang]
-    ph_btn = buttons["phenomena"][lang]
-    man_ph_btn = inline_buttons["manually"][lang]
-    ph_time = PhenomenonTime.query.filter_by(user_id=user_id).first()
+    daily_btn = buttons["daily"][data['lang']]
+    ph_btn = buttons["phenomena"][data['lang']]
+    man_ph_btn = inline_buttons["manually"][data['lang']]
+    ph_time = PhenomenonTime.query.filter_by(user_id=data['user'].id).first()
 
     try:
         hours = ph_time.hours
@@ -431,12 +394,12 @@ def button_info(message, ):
         ph_time = f'{hours}:{minutes}'
     except AttributeError as e:
         logger.warning(f'Time was not set\n{repr(e)}')
-        ph_time = f"{info[lang][13]}\n"
+        ph_time = f"{info[data['lang']][13]}\n"
 
-    response = f'<b>{daily_btn}:</b>\n<b>{info[lang][12]}:</b>\n{daily_text}' \
+    response = f'<b>{daily_btn}:</b>\n<b>{info[data["lang"]][12]}:</b>\n{daily_text}' \
                f'\n<b>{ph_btn}:</b>\n{ph_text}' \
                f'\n<b>{man_ph_btn}:</b>\n{man_ph_text}' \
-               f'\n<b>{info[lang][12]}:</b>\n{ph_time}'
+               f'\n<b>{info[data["lang"]][12]}:</b>\n{ph_time}'
     bot.send_message(chat_id=message.chat.id, text=response, parse_mode='html')
 
 
@@ -444,23 +407,19 @@ def button_info(message, ):
 @bot.message_handler(
     func=lambda message: message.text == buttons['help']['en'] or message.text == buttons['help']['ru'])
 def button_help(message, ):
-    user_data = User.get_user_data(message)
-    chat_id = user_data['chat_id']
-    lang = user_data['lang']
+    data = User.get_user_data(message)
 
-    response = hints['help intro'][lang]
-    bot.send_message(chat_id, text=response, parse_mode='html')
+    response = hints['help intro'][data['lang']]
+    bot.send_message(data['chat_id'], text=response, parse_mode='html')
 
 
 # Handle button 'menu'
 @bot.message_handler(
     func=lambda message: message.text == buttons['menu']['en'] or message.text == buttons['menu']['ru'])
 def button_menu(message, ):
-    user_data = User.get_user_data(message)
-    chat_id = user_data['chat_id']
-    lang = user_data['lang']
+    data = User.get_user_data(message)
 
-    bot.send_message(chat_id, text=hints['menu'][lang], reply_markup=call_main_keyboard(lang))
+    bot.send_message(data['chat_id'], text=hints['menu'][data['lang']], reply_markup=call_main_keyboard(data['lang']))
 
 
 # Handle all other messages with content_type 'sticker' and 'text' (content_types defaults to ['text'])
@@ -470,26 +429,21 @@ def respond(message):
         sticker = open('app/static/AnimatedSticker.tgs', 'rb')
         return bot.send_sticker(message.chat.id, sticker)
     else:
-        user_data = User.get_user_data(message)
-        chat_id = user_data['chat_id']
-        lang = user_data['lang']
-        user = user_data['user']
-        username = user_data['username']
-        city_name = user_data['city_name']
+        data = User.get_user_data(message)
 
         city = message.text
-        response = get_response(city, lang, message.date)
+        response = get_response(city, data['lang'], message.date)
 
         if 'Try again' not in response:
-            if not user:
-                user = User(username=username, chat_id=chat_id, city_name=city, language=lang)
-                db.session.add(user)
+            if not data['user']:
+                data['user'] = User(username=data['username'], chat_id=data['chat_id'], city_name=city, language=data['lang'])
+                db.session.add(data['user'])
                 db.session.commit()
-            elif not city_name:
-                user.city_name = city
+            elif not data['city_name']:
+                data['user'].city_name = city
                 db.session.commit()
 
-        return bot.send_message(chat_id=chat_id, text=response, parse_mode='html')
+        return bot.send_message(chat_id=data['chat_id'], text=response, parse_mode='html')
 
 
 # handle phenomenon inline keyboard time setting (hours)
@@ -836,7 +790,3 @@ def callback_inline_language(call):
     else:
         bot.send_message(chat_id=call.message.chat.id, text=f'{hints["lang chosen"][new_lang]}',
                          reply_markup=call_settings_keyboard(lang=new_lang))
-
-
-if __name__ == '__main__':
-    phenomenon_info(1)

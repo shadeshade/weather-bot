@@ -1,15 +1,39 @@
 from datetime import datetime
 from typing import Dict
 
-import requests
 import transliterate
-from bs4 import BeautifulSoup
 from transliterate.exceptions import LanguageDetectionError
 
+from app import logger
 from app.data import emoji_conditions
 from app.data.localization import hints, info, ph_info
 from app.data.utils import get_city_data
-from app import logger
+from app.mastermind.parsing import get_weather_info, get_extended_info
+
+
+def get_start(first_name, lang):
+    """returns greeting and a short navigate information"""
+    text = hints['start msg1'][lang] + first_name + hints['start msg2'][lang]
+    return text
+
+
+def transliterate_name(city_to_translit):
+    """transliterate a city name in case the name is not in the cities_db"""
+    try:
+        city = get_city_data(city_to_translit.title())
+    except KeyError as e:
+        logger.warning(f'There is no such a city in the db {repr(e)}')
+    else:
+        return city
+
+    try:
+        new_name = transliterate.translit(city_to_translit, reversed=True)  # ru -> en
+        if 'х' in city_to_translit.lower():  # 'х'(rus) -> 'kh'
+            new_name = new_name.lower().replace('h', 'kh')
+    except LanguageDetectionError as e:
+        logger.warning(f'The name of the city is not in Russian. ({e})')
+        new_name = city_to_translit
+    return new_name
 
 
 def get_day_part(ts, sunset):  # timestamp in Unix time
@@ -54,12 +78,6 @@ def get_condition(cond, day_part):
     return condition.title()
 
 
-def get_start(first_name, lang):
-    """returns greeting and a short navigate information"""
-    text = hints['start msg1'][lang] + first_name + hints['start msg2'][lang]
-    return text
-
-
 def get_response(city_name, lang, timestamp):
     """basic function"""
 
@@ -83,7 +101,7 @@ def get_response(city_name, lang, timestamp):
 
         wind_speed_and_direction = daypart_info["wind_speed_and_direction"]
         if wind_speed_and_direction != info[lang][7]:
-            wind_speed_and_direction =  wind_speed_and_direction.split(', ')[0]
+            wind_speed_and_direction = wind_speed_and_direction.split(', ')[0]
 
         daypart_message += f'{daypart.title()}: {daypart_temp}; {info[lang][2]}: {wind_speed_and_direction} ' \
                            f'{daypart_cond_emoji}\n\n'
@@ -111,60 +129,6 @@ def get_response(city_name, lang, timestamp):
 
     response_message = message_part1 + daypart_message + message_part2
 
-    return response_message
-
-
-def get_weather_info(city_name, lang):
-    """return the current weather info"""
-    if lang == 'ru':
-        source = requests.get('https://yandex.ru/pogoda/' + city_name)
-    else:
-        source = requests.get('https://yandex.com/pogoda/' + city_name)
-
-    soup = BeautifulSoup(source.content, 'html.parser')
-    weather_soup = soup.find('div', attrs={'class': 'fact'})
-
-    header = weather_soup.find('div', attrs={'class': 'header-title'})
-    header = header.find('h1', attrs={'class': 'title'}).text
-
-    temperature = weather_soup.find('div', attrs={'class': 'fact__temp-wrap'})
-    temperature = temperature.find(attrs={'class': 'temp__value'}).text
-
-    wind_speed_and_direction = weather_soup.find('div', attrs={'class': 'fact__props'})
-    try:
-        wind_speed = wind_speed_and_direction.find('span', attrs={'class': 'wind-speed'}).text  # wind speed
-        wind_direction = wind_speed_and_direction.find('span', attrs={'class': 'fact__unit'}).text  # wind unit, direct
-        wind_speed_and_direction = f"{wind_speed} {wind_direction}"
-    except AttributeError as e:
-        logger.warning(f'No wind\n{repr(e)}')
-        wind_speed_and_direction = info[lang][7]
-
-    humidity = weather_soup.find('div', attrs={'class': 'fact__humidity'})
-    humidity = humidity.find('div', attrs={'class': 'term__value'}).text  # humidity percentage
-
-    condition = weather_soup.find('div', attrs={
-        'class': 'link__condition'}).text  # condition comment (clear, windy etc.)
-
-    feels_like = weather_soup.find('div', attrs={'class': 'term__value'})
-    feels_like = feels_like.find('div', attrs={'class': 'temp'}).text  # feels like temperature
-
-    daylight_soup = soup.find('div', attrs={'class': 'sun-card__info'})
-    daylight_hours = daylight_soup.find('div', attrs={
-        'class': 'sun-card__day-duration-value'}).text  # daylight duration
-    sunrise = daylight_soup.find('div', attrs={'class': 'sun-card__sunrise-sunset-info_value_rise-time'}).text[-5:]
-    sunset = daylight_soup.find('div', attrs={'class': 'sun-card__sunrise-sunset-info_value_set-time'}).text[-5:]
-
-    response_message = {
-        'header': header,
-        'temperature': temperature,
-        'wind_speed_and_direction': wind_speed_and_direction,
-        'humidity': humidity,
-        'condition': condition,
-        'feels_like': feels_like,
-        'daylight_hours': daylight_hours,
-        'sunrise': sunrise,
-        'sunset': sunset,
-    }
     return response_message
 
 
@@ -237,8 +201,8 @@ def get_next_week(city, lang):
     return response_message
 
 
-# daily info
 def get_daily(city_name, lang):
+    """daily info"""
     transliterated_city = transliterate_name(city_name)
     extended_info = get_extended_info(transliterated_city, 'daily', lang)
     response_message = f'{extended_info["part1"]["weather_daypart"]},\n' \
@@ -247,108 +211,3 @@ def get_daily(city_name, lang):
                        f'{extended_info["part1"]["weather_daypart_wind"]},\n' \
                        f'{extended_info["part1"]["weather_daypart_direction"]},\n'
     return response_message
-
-
-# handle get_extended_info func
-def get_day_info(weather_rows, unit, lang):
-    daypart_dict = dict()
-    row_count = 0
-    for row in weather_rows:
-        weather_daypart = row.find('div', attrs={'class': 'weather-table__daypart'}).text
-        weather_daypart_temp = row.find('div', attrs={'class': 'weather-table__temp'}).text
-        weather_daypart_humidity = row.find('td', attrs={
-            'class': 'weather-table__body-cell weather-table__body-cell_type_humidity'}).text
-        weather_daypart_condition = row.find('td', attrs={'class': 'weather-table__body-cell_type_condition'}).text
-        try:
-            weather_daypart_wind = row.find('span', attrs={'class': 'weather-table__wind'}).text
-            weather_unit = unit
-            weather_daypart_direction = row.find('abbr', attrs={'class': 'icon-abbr'}).text
-            wind_speed_and_direction = f'{weather_daypart_wind} {weather_unit}, {weather_daypart_direction}'
-        except AttributeError as e:
-            logger.warning(f'No wind\n{repr(e)}')
-            wind_speed_and_direction = info[lang][7]
-
-        temp_daypart_dict = {
-            'weather_daypart': weather_daypart,
-            'weather_daypart_temp': weather_daypart_temp,
-            'weather_daypart_humidity': weather_daypart_humidity,
-            'weather_daypart_condition': weather_daypart_condition,
-            'wind_speed_and_direction': wind_speed_and_direction,
-        }
-        row_count += 1
-        daypart_dict['part' + str(row_count)] = temp_daypart_dict
-    return daypart_dict
-
-
-# handle 'daily', 'tomorrow', 'today', 'for a week' buttons
-def get_extended_info(city_name, command, lang):
-    """return the extended weather info of the current day for daily cast"""
-    if lang == 'ru':
-        source = requests.get('https://yandex.ru/pogoda/' + city_name + '/details')
-    else:
-        source = requests.get('https://yandex.com/pogoda/' + city_name + '/details')
-
-    soup = BeautifulSoup(source.content, 'html.parser')
-    weather_unit = info[lang][10]
-
-    if command == 'daily':  # button daily
-        weather_table = soup.find('div', attrs={'class': 'card'})
-    elif command == 'tomorrow':  # button tomorrow
-        weather_table = soup.find_all('div', attrs={'class': 'card'})[2]
-    elif command == 'today':
-        weather_table = soup.find_all('div', attrs={'class': 'card'})[0]
-    else:  # button for a week
-        days_dict = dict()
-        day_count = 0
-
-        weather_city = soup.find('h1', attrs={'class': 'title title_level_1 header-title__title'}).text
-        weather_city = weather_city.split()[-1]
-
-        weather_tables = soup.find_all('div', attrs={'class': 'card'})[2:]
-        for day in weather_tables:
-            if day_count >= 7:  # output 7 days for the button 'for a week'
-                break
-            weather_day = day.find('strong', attrs={'class': 'forecast-details__day-number'}).text
-            weather_month = day.find('span', attrs={'class': 'forecast-details__day-month'}).text
-            weather_date = f'{weather_day} {weather_month}'
-            weather_rows = day.find_all('tr', attrs={'class': 'weather-table__row'})
-            day_count += 1
-
-            daypart_dict = get_day_info(weather_rows, weather_unit, lang)
-            daypart_dict['weather_date'] = weather_date
-            days_dict['day' + str(day_count)] = daypart_dict
-
-        days_dict['weather_city'] = weather_city
-        return days_dict
-
-    weather_city = soup.find('h1', attrs={'class': 'title title_level_1 header-title__title'}).text
-    weather_city = weather_city.split()[-1]
-    weather_day = weather_table.find('strong', attrs={'class': 'forecast-details__day-number'}).text
-    weather_month = weather_table.find('span', attrs={'class': 'forecast-details__day-month'}).text
-    weather_date = f'{weather_day} {weather_month}'
-    weather_rows = weather_table.find_all('tr', attrs={'class': 'weather-table__row'})
-
-    daypart_dict = get_day_info(weather_rows, weather_unit, lang)
-    daypart_dict['weather_city'] = weather_city
-    daypart_dict['weather_date'] = weather_date
-
-    return daypart_dict
-
-
-def transliterate_name(city_to_translit):
-    """transliterate a city name in case the name is not in the cities_db"""
-    try:
-        city = get_city_data(city_to_translit.title())
-    except KeyError as e:
-        logger.warning(f'There is no such a city in the db {repr(e)}')
-    else:
-        return city
-
-    try:
-        new_name = transliterate.translit(city_to_translit, reversed=True)  # ru -> en
-        if 'х' in city_to_translit.lower():  # 'х'(rus) -> 'kh'
-            new_name = new_name.lower().replace('h', 'kh')
-    except LanguageDetectionError as e:
-        logger.warning(f'The name of the city is not in Russian. ({e})')
-        new_name = city_to_translit
-    return new_name
