@@ -1,5 +1,4 @@
 import telebot
-from apscheduler.schedulers.background import BackgroundScheduler
 from flask import request
 from sqlalchemy.orm.exc import UnmappedInstanceError
 from telebot.apihelper import ApiException
@@ -8,12 +7,11 @@ from app import app, bot
 from app.credentials import HEROKU_DEPLOY_DOMAIN, NGROK_DEPLOY_DOMAIN, TOKEN, DEBUG
 from app.data.localization import buttons, inline_buttons
 from app.mastermind.formating import *
+from app.mastermind.scheduling import delete_ph_time_jobs, set_phenomenon_time, set_daily, sched
 from app.mastermind.tele_buttons import phenomena_list, gen_markup_minutes, gen_markup_hours, gen_markup_phenomena, \
     gen_markup_language, call_main_keyboard, call_settings_keyboard, gen_markup_phenomena_manually, \
     ph_manually_list
 from app.models import *
-
-sched = BackgroundScheduler()
 
 
 @app.route('/setwebhook', methods=['GET', 'POST'])
@@ -38,8 +36,8 @@ def get_update():
 
 # Handle '/start'
 @bot.message_handler(commands=['start'])
-def command_start(message,):
-    data = User.get_user_data(message)  # todo: refactor other views the same way
+def command_start(message, ):
+    data = User.get_user_data(message)
     if not data['user']:
         new_user = User(username=data['username'], chat_id=data['chat_id'], language=data['lang'])
         db.session.add(new_user)
@@ -115,27 +113,6 @@ def button_daily(message):
     bot.send_message(data['chat_id'], text=response, reply_markup=gen_markup_daily(data['user'].id))
 
 
-# Handle '/daily' (setting a daily reminder)
-def set_daily(new_reminder, hours, minutes, ):
-    job = sched.add_job(
-        daily_info, args=[new_reminder.user_id, f'{hours}.{minutes}'], trigger='cron', hour=hours, minute=minutes
-    )
-    job_id = job.id
-    new_reminder.job_id = job_id
-    db.session.commit()
-
-    if sched.state == 0:
-        sched.start()
-
-
-# Handle '/daily' (sending a reminder)
-def daily_info(user_id, set_time):
-    user = User.query.filter_by(id=user_id).first()
-    response = get_response(user.city_name, user.language, set_time)
-
-    bot.send_message(user.chat_id, text=response, parse_mode='html')
-
-
 # Handle button 'phenomena'
 @bot.message_handler(
     func=lambda message: message.text == buttons['phenomena']['en'] or message.text == buttons['phenomena']['ru'])
@@ -147,139 +124,6 @@ def button_phenomena(message, ):
 
     response = hints['phenomena intro'][data['lang']]
     bot.send_message(data['chat_id'], text=response, reply_markup=gen_markup_phenomena(data['user'].id, data['user']))
-
-
-# Handle phenomenon reminder
-def set_phenomenon_time(new_reminder, hours, minutes):
-    user_id = new_reminder.user_id
-    job = sched.add_job(ph_info, args=[user_id], trigger='cron', hour=hours, minute=minutes, )
-    new_reminder.job_id = job.id
-    db.session.commit()
-
-    if sched.state == 0:
-        sched.start()
-
-
-# Handle phenomenon reminder (sending a reminder)
-def phenomenon_info(user_id):
-    user = User.query.filter_by(id=user_id).first()
-    lang = user.language
-    next_day_max_val = {'temp_positive': 0, 'temp_negative': 0, 'condition': [], 'wind': 0, 'humidity': 0}
-    next_day_info = get_next_day(user.city_name, user.language, phenomenon_info=True)
-    for day_part_info in next_day_info.values():
-        if '+' in day_part_info['daypart_temp']:  # temp_positive
-            temp_positive = int(day_part_info['daypart_temp'].split('+')[-1].replace('°', ''))
-            if temp_positive > next_day_max_val['temp_positive']:
-                next_day_max_val['temp_positive'] = temp_positive
-        elif '-' in day_part_info['daypart_temp']:  # temp_negative
-            daypart_temp_negative = int(day_part_info['daypart_temp'].split('-')[-1].replace('°', ''))
-            if daypart_temp_negative > next_day_max_val['temp_negative']:
-                next_day_max_val['temp_negative'] = daypart_temp_negative
-
-        condition = day_part_info['daypart_condition']  # condition
-        next_day_max_val['condition'] += [condition.lower()]
-
-        wind = float(day_part_info['daypart_wind'].replace(',', '.'))  # wind
-        if wind > next_day_max_val['wind']:
-            next_day_max_val['wind'] = wind
-
-        humidity = int(day_part_info['daypart_humidity'].replace('%', ''))  # humidity
-        if humidity > next_day_max_val['humidity']:
-            next_day_max_val['humidity'] = humidity
-
-    temp_positive = next_day_max_val['temp_positive']
-    temp_negative = next_day_max_val['temp_negative']
-    condition = next_day_max_val['condition']
-    wind = next_day_max_val['wind']
-    humidity = next_day_max_val['humidity']
-
-    text = ''
-    all_phenomena = Phenomenon.query.filter_by(user_id=user.id).all()
-    for phenomenon in all_phenomena:
-        existing_ph = ph_info[phenomenon.phenomenon][lang]
-        if existing_ph in condition:
-            val_and_unit = condition
-            pass
-        elif existing_ph == ph_info["strong wind"][lang]:
-            if 29 >= wind >= 12:
-                val_and_unit = f'{wind} {info[lang][10]}'
-                pass
-            else:
-                continue
-        elif existing_ph == ph_info["hurricane"][lang]:
-            if wind >= 30:
-                val_and_unit = f'{wind} {info[lang][10]}'
-                pass
-            else:
-                continue
-        elif existing_ph == ph_info["intense heat"][lang]:
-            if temp_positive >= 30:
-                val_and_unit = f'+{temp_positive}°C'
-                pass
-            else:
-                continue
-        else:
-            continue
-        text += f'\n{existing_ph.capitalize()} {val_and_unit}'
-
-    all_man_phenomena = PhenomenonManually.query.filter_by(user_id=user_id).all()
-    for man_ph in all_man_phenomena:
-        ph = ph_info[man_ph.phenomenon][lang]
-        val = man_ph.value
-        if ph == ph_info['positive temperature'][lang]:
-            if val <= temp_positive:
-                val_and_unit = f'+{temp_positive}°C'
-                pass
-            else:
-                continue
-        elif ph == ph_info['negative temperature'][lang]:
-            if val <= temp_negative:
-                val_and_unit = f'-{temp_negative}°C'
-                pass
-            else:
-                continue
-        elif ph == ph_info['wind speed'][lang]:
-            if val <= wind:
-                val_and_unit = f'{wind} {info[lang][10]}'
-                pass
-            else:
-                continue
-        elif ph == ph_info['humidity'][lang]:
-            if val <= humidity:
-                val_and_unit = f'{humidity}%'
-                pass
-            else:
-                continue
-        else:
-            continue
-        if ph == ph_info['positive temperature'][lang] or ph == ph_info['negative temperature'][lang]:
-            ph = info[lang][11]
-        text += f'\n{ph.capitalize()} {val_and_unit}'
-
-    if text:
-        response_msg = f'<b>{hints["phenomenon tomorrow"][user.language]}</b>'
-        response_msg += text
-        bot.send_message(user.chat_id, text=response_msg, parse_mode='html')
-
-
-# Handle delete phenomenon reminder
-def delete_ph_time_jobs(user_id):
-    ph_reminders = PhenomenonTime.query.filter_by(user_id=user_id).all()
-    for reminder in ph_reminders:
-        sched.remove_job(job_id=reminder.job_id)
-
-
-# Handle '/daily'
-def back_up_reminders():
-    sched.remove_all_jobs()
-
-    reminders = ReminderTime.query.all()
-    for reminder in reminders:
-        set_daily(reminder, reminder.hours, reminder.minutes)
-
-    phenomenon_reminders = PhenomenonTime.query.all()
-    for ph_reminder in phenomenon_reminders:
-        set_phenomenon_time(ph_reminder, ph_reminder.hours, ph_reminder.minutes)
 
 
 # Handle button 'city'
@@ -436,7 +280,8 @@ def respond(message):
 
         if 'Try again' not in response:
             if not data['user']:
-                data['user'] = User(username=data['username'], chat_id=data['chat_id'], city_name=city, language=data['lang'])
+                data['user'] = User(username=data['username'], chat_id=data['chat_id'], city_name=city,
+                                    language=data['lang'])
                 db.session.add(data['user'])
                 db.session.commit()
             elif not data['city_name']:
