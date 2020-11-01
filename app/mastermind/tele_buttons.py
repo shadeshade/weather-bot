@@ -1,6 +1,6 @@
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, KeyboardButton, ReplyKeyboardMarkup
 
-from app.data.localization import inline_buttons, buttons
+from app.data.localization import inline_button_names, button_names
 from app.models import Phenomenon, User
 
 temp_buttons = ['temp_btn1', 'temp_btn2', 'temp_btn3', 'temp_btn4']
@@ -9,22 +9,21 @@ ph_manual_list = ['positive temperature', 'negative temperature', 'wind speed', 
 additional_btns = ['remove all', 'back']
 
 
-def get_main_keyboard_btns(lang, settings=False):
-    """genarate button list for main keyboard"""
-    main_keyboard_buttons = ['weather now', 'for tomorrow', 'for a week', 'settings', 'daily', 'phenomena', 'city',
-                             'language', 'info', 'help', 'menu']
-    button_list = []
-    for idx in range(len(main_keyboard_buttons)):
-        btn = KeyboardButton(buttons[main_keyboard_buttons[idx]][lang])
-        button_list.append(btn)
-    result = []
-    if not settings:
-        for idx in range(4):
-            result.append(button_list[idx])
+def get_main_keyboard_btns(lang, is_settings_keyboard=False):
+    """generate button list for main keyboard"""
+    main_keyboard_buttons = ['weather now', 'for tomorrow', 'for a week', 'settings']
+    settings_keyboard_buttons = ['daily', 'phenomena', 'city', 'language', 'info', 'help', 'menu']
+    if is_settings_keyboard:
+        keyboard_buttons = settings_keyboard_buttons
     else:
-        for idx in range(4, 11):
-            result.append(button_list[idx])
-    return result
+        keyboard_buttons = main_keyboard_buttons
+
+    button_list = []
+    for btn_key in keyboard_buttons:
+        btn = KeyboardButton(button_names[btn_key][lang])
+        button_list.append(btn)
+
+    return button_list
 
 
 def call_main_keyboard(lang):
@@ -37,7 +36,7 @@ def call_main_keyboard(lang):
 
 def call_settings_keyboard(lang):
     keyboard = ReplyKeyboardMarkup(one_time_keyboard=False, resize_keyboard=True)
-    btns = get_main_keyboard_btns(lang, settings=True)
+    btns = get_main_keyboard_btns(lang, is_settings_keyboard=True)
     keyboard.add(btns[0], btns[1])
     keyboard.add(btns[2], btns[3])
     keyboard.add(btns[4], btns[5])
@@ -58,7 +57,7 @@ def gen_markup_phenomena(user_id, lang):
                 tick = '✅ '
             else:
                 tick = '✖'
-            temp_button_dict[temp_btn] = InlineKeyboardButton(f"{tick}{inline_buttons[phenomenon][lang]}",
+            temp_button_dict[temp_btn] = InlineKeyboardButton(f"{tick}{inline_button_names[phenomenon][lang]}",
                                                               callback_data=f"phenomenon {phenomenon}")
         button_values = [v for k, v in temp_button_dict.items()]
         markup.add(button_values[0], button_values[1])
@@ -69,10 +68,10 @@ def gen_markup_phenomena(user_id, lang):
         tick = '✖'
     markup.add(
         InlineKeyboardButton(
-            f"{tick}{inline_buttons[phenomena_list[-1]][lang]}", callback_data='phenomenon intense heat'),
-        InlineKeyboardButton(f"{inline_buttons['manually'][lang]}", callback_data='phenomena manually'),
-        InlineKeyboardButton(f"{inline_buttons['all phenomena'][lang]}", callback_data='all phenomena'),
-        InlineKeyboardButton(f"{inline_buttons['set time'][lang]}", callback_data='set time phenomena')
+            f"{tick}{inline_button_names[phenomena_list[-1]][lang]}", callback_data='phenomenon intense heat'),
+        InlineKeyboardButton(f"{inline_button_names['manually'][lang]}", callback_data='phenomena manually'),
+        InlineKeyboardButton(f"{inline_button_names['all phenomena'][lang]}", callback_data='all phenomena'),
+        InlineKeyboardButton(f"{inline_button_names['set time'][lang]}", callback_data='set time phenomena')
     )
     return markup
 
@@ -89,16 +88,16 @@ def gen_markup_phenomena_manually(user_id, lang):
                 tick = '✅ '
             else:
                 tick = '✖'
-            temp_button_dict[temp_btn] = InlineKeyboardButton(f"{tick}{inline_buttons[phenomenon][lang]}",
+            temp_button_dict[temp_btn] = InlineKeyboardButton(f"{tick}{inline_button_names[phenomenon][lang]}",
                                                               callback_data=f"manually {phenomenon}")
         button_values = [v for k, v in temp_button_dict.items()]
         markup.add(button_values[0], button_values[1])
     markup.row_width = 2
     markup.add(
         InlineKeyboardButton(
-            f"{inline_buttons[additional_btns[0]][lang]}", callback_data=f"manually {additional_btns[0]}"),
+            f"{inline_button_names[additional_btns[0]][lang]}", callback_data=f"manually {additional_btns[0]}"),
         InlineKeyboardButton(
-            f"{inline_buttons[additional_btns[1]][lang]}", callback_data=f"manually {additional_btns[1]}")
+            f"{inline_button_names[additional_btns[1]][lang]}", callback_data=f"manually {additional_btns[1]}")
     )
     return markup
 
@@ -119,10 +118,10 @@ def gen_markup_hours(user_id, model, lang, callback='', ):
         markup.add(button_values[0], button_values[1], button_values[2], button_values[3])
     if callback == '_ph':
         markup.add(InlineKeyboardButton(
-            inline_buttons['back'][lang], callback_data=f"back_to{callback}"))
+            inline_button_names['back'][lang], callback_data=f"back_to{callback}"))
     else:
         markup.add(InlineKeyboardButton(
-            f"{inline_buttons['remove all'][lang]}", callback_data="daily remove all"))
+            f"{inline_button_names['remove all'][lang]}", callback_data="daily remove all"))
     return markup
 
 
@@ -140,7 +139,7 @@ def gen_markup_minutes(user_id, hours, model, lang, callback='', ):
             mins += 10
         button_values = [v for k, v in temp_button_dict.items()]
         markup.add(button_values[0], button_values[1], button_values[2])
-    markup.add(InlineKeyboardButton(inline_buttons['back'][lang], callback_data=f"back_to_hours{callback}"))
+    markup.add(InlineKeyboardButton(inline_button_names['back'][lang], callback_data=f"back_to_hours{callback}"))
     return markup
 
 

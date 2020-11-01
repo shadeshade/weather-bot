@@ -1,4 +1,4 @@
-buttons = {
+button_names = {
     'weather now': {'en': '🧙🏻‍♀ Weather now', 'ru': '🧙🏻‍♀ Погода сейчас'},
     'for tomorrow': {'en': '🧙🏼 For tomorrow', 'ru': '🧙🏼 На завтра'},
     'for a week': {'en': '🧙🏿‍♂ For a week', 'ru': '🧙🏿‍♂ На неделю'},
@@ -12,7 +12,7 @@ buttons = {
     'menu': {'en': '↩ Menu', 'ru': '↩ Меню'},
 }
 
-inline_buttons = {
+inline_button_names = {
     'strong wind': {'en': 'Strong wind', 'ru': 'Сильный ветер'},
     'hailstorm': {'en': 'Hailstorm', 'ru': 'Град'},
     'hurricane': {'en': 'Hurricane', 'ru': 'Ураган'},
@@ -52,7 +52,7 @@ hints = {
     'phenomena manually intro': {
         'en': 'Here you can configure phenomena in more detail',
         'ru': 'Здесь вы можете настроить события более детально'},
-        'remove manually': {
+    'remove manually': {
         'en': 'All phenomena removed',
         'ru': 'Все события удалены'},
     'num expected': {

@@ -19,20 +19,20 @@ class User(db.Model):
     def get_user_data(message):
         chat_id = message.chat.id
         user = User.query.filter_by(chat_id=chat_id).first()
-        username = message.from_user.first_name
-        try:
-            lang = user.language
-        except AttributeError as e:
-            logger.warning(e)
-            lang = message.from_user.language_code
-        try:
-            city_name = user.city_name
-        except AttributeError as e:
-            logger.warning(e)
+        if not user:
             city_name = None
+            lang = message.from_user.language_code
+        else:
+            city_name = user.city_name
+            lang = user.language
 
-        data_dict = {'user': user, 'username': username, 'city_name': city_name, 'chat_id': chat_id, 'lang': lang}
-        return data_dict
+        try:
+            username = message.from_user.first_name
+        except AttributeError as err:
+            logger.warning(f'Couldn\'t get first name from Telegram API, error: {err}')
+            username = ''
+
+        return {'user': user, 'username': username, 'city_name': city_name, 'chat_id': chat_id, 'lang': lang}
 
 
 # todo: Merge tables ReminderTime and PhenomenonTime into one

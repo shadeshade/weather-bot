@@ -5,7 +5,7 @@ from telebot.apihelper import ApiException
 
 from app import app, bot
 from app.credentials import HEROKU_DEPLOY_DOMAIN, NGROK_DEPLOY_DOMAIN, TOKEN, DEBUG
-from app.data.localization import buttons, inline_buttons
+from app.data.localization import button_names, inline_button_names
 from app.mastermind.formating import *
 from app.mastermind.scheduling import delete_ph_time_jobs, set_phenomenon_time, set_daily, sched
 from app.mastermind.tele_buttons import phenomena_list, gen_markup_minutes, gen_markup_hours, gen_markup_phenomena, \
@@ -18,25 +18,26 @@ from app.models import *
 def set_webhook():
     bot.remove_webhook()
     if DEBUG:
-        s = bot.set_webhook(f'{NGROK_DEPLOY_DOMAIN}/{TOKEN}')
+        res = bot.set_webhook(f'{NGROK_DEPLOY_DOMAIN}/{TOKEN}')
     else:
-        s = bot.set_webhook(f'{HEROKU_DEPLOY_DOMAIN}/{TOKEN}')
-    if s:
+        res = bot.set_webhook(f'{HEROKU_DEPLOY_DOMAIN}/{TOKEN}')
+
+    if res:
         return "webhook setup ok"
     else:
         return "webhook setup failed"
 
 
-# handle incoming messages
 @app.route(f'/{TOKEN}', methods=['POST'])
 def get_update():
+    """handle incoming messages"""
     bot.process_new_updates([telebot.types.Update.de_json(request.stream.read().decode("utf-8"))])
     return "ok", 200
 
 
-# Handle '/start'
 @bot.message_handler(commands=['start'])
 def command_start(message, ):
+    """Handle '/start'"""
     data = User.get_user_data(message)
     if not data['user']:
         new_user = User(username=data['username'], chat_id=data['chat_id'], language=data['lang'])
@@ -48,10 +49,14 @@ def command_start(message, ):
                      reply_markup=call_main_keyboard(data['lang']), parse_mode='html')
 
 
-# Handle button 'weather now'
-@bot.message_handler(
-    func=lambda message: message.text == buttons['weather now']['en'] or message.text == buttons['weather now']['ru'])
+def get_message_handler_func(button_key):
+    return lambda message: message.text == button_names[button_key]['en'] or \
+                           message.text == button_names[button_key]['ru']
+
+
+@bot.message_handler(func=get_message_handler_func('weather now'))
 def button_weather_now(message, ):
+    """Handle button 'weather now'"""
     data = User.get_user_data(message)
 
     if not data['user'] or not data['city_name']:
@@ -61,10 +66,9 @@ def button_weather_now(message, ):
     bot.send_message(chat_id=data['chat_id'], text=response, parse_mode='html')
 
 
-# Handle button 'for tomorrow'
-@bot.message_handler(
-    func=lambda message: message.text == buttons['for tomorrow']['en'] or message.text == buttons['for tomorrow']['ru'])
+@bot.message_handler(func=get_message_handler_func('for tomorrow'))
 def button_tomorrow(message, ):
+    """Handle button 'for tomorrow'"""
     data = User.get_user_data(message)
 
     if not data['user'] or not data['city_name']:
@@ -74,10 +78,9 @@ def button_tomorrow(message, ):
     bot.send_message(chat_id=data['chat_id'], text=response, parse_mode='html')
 
 
-# Handle button 'for a week'
-@bot.message_handler(
-    func=lambda message: message.text == buttons['for a week']['en'] or message.text == buttons['for a week']['ru'])
+@bot.message_handler(func=get_message_handler_func('for a week'))
 def button_week(message, ):
+    """Handle button 'for a week'"""
     data = User.get_user_data(message)
 
     if not data['user'] or not data['city_name']:
@@ -87,18 +90,16 @@ def button_week(message, ):
     bot.send_message(chat_id=data['chat_id'], text=response, parse_mode='html')
 
 
-# Handle button 'settings'
-@bot.message_handler(
-    func=lambda message: message.text == buttons['settings']['en'] or message.text == buttons['settings']['ru'])
+@bot.message_handler(func=get_message_handler_func('settings'))
 def button_settings(message, ):
+    """Handle button 'settings'"""
     data = User.get_user_data(message)
     bot.send_message(data['chat_id'], text=info[data['lang']][9], reply_markup=call_settings_keyboard(data['lang']))
 
 
-# Handle button 'daily'
-@bot.message_handler(
-    func=lambda message: message.text == buttons['daily']['en'] or message.text == buttons['daily']['ru'])
+@bot.message_handler(func=get_message_handler_func('daily'))
 def button_daily(message):
+    """Handle button 'daily'"""
     data = User.get_user_data(message)
 
     if not data['user'] or not data['city_name']:
@@ -113,9 +114,9 @@ def button_daily(message):
     bot.send_message(data['chat_id'], text=response, reply_markup=gen_markup_daily(data['user'].id))
 
 
+# TODO: in every view move a comment like that in docstring
 # Handle button 'phenomena'
-@bot.message_handler(
-    func=lambda message: message.text == buttons['phenomena']['en'] or message.text == buttons['phenomena']['ru'])
+@bot.message_handler(func=get_message_handler_func('phenomena'))
 def button_phenomena(message, ):
     data = User.get_user_data(message)
 
@@ -126,10 +127,9 @@ def button_phenomena(message, ):
     bot.send_message(data['chat_id'], text=response, reply_markup=gen_markup_phenomena(data['user'].id, data['lang']))
 
 
-# Handle button 'city'
-@bot.message_handler(
-    func=lambda message: message.text == buttons['city']['en'] or message.text == buttons['city']['ru'])
+@bot.message_handler(func=get_message_handler_func('city'))
 def button_city(message, intro=True):
+    """Handle button 'city'"""
     data = User.get_user_data(message)
 
     if not data['user']:
@@ -153,8 +153,8 @@ def add_city(message):
     lang = user.language
     city = message.text
 
-    btns = {value[lang] for key, value in buttons.items()}
-    inline_btns = {value[lang] for key, value in inline_buttons.items()}
+    btns = {value[lang] for key, value in button_names.items()}
+    inline_btns = {value[lang] for key, value in inline_button_names.items()}
     if message.text in btns or message.text in inline_btns:
         return bot.send_message(chat_id, hints['cancel'][lang])
 
@@ -170,8 +170,7 @@ def add_city(message):
 
 
 # Handle button 'language'
-@bot.message_handler(
-    func=lambda message: message.text == buttons['language']['en'] or message.text == buttons['language']['ru'])
+@bot.message_handler(func=get_message_handler_func('language'))
 def button_language(message, ):
     data = User.get_user_data(message)
 
@@ -185,8 +184,7 @@ def button_language(message, ):
 
 
 # Handle button 'info'
-@bot.message_handler(
-    func=lambda message: message.text == buttons['info']['en'] or message.text == buttons['info']['ru'])
+@bot.message_handler(func=get_message_handler_func('info'))
 def button_info(message, ):
 
     data = User.get_user_data(message)
@@ -225,9 +223,9 @@ def button_info(message, ):
     if not man_ph_text:
         man_ph_text = f"{info[data['lang']][13]}\n"
 
-    daily_btn = buttons["daily"][data['lang']]
-    ph_btn = buttons["phenomena"][data['lang']]
-    man_ph_btn = inline_buttons["manually"][data['lang']]
+    daily_btn = button_names["daily"][data['lang']]
+    ph_btn = button_names["phenomena"][data['lang']]
+    man_ph_btn = inline_button_names["manually"][data['lang']]
     ph_time = PhenomenonTime.query.filter_by(user_id=data['user'].id).first()
 
     try:
@@ -250,8 +248,7 @@ def button_info(message, ):
 
 
 # Handle button 'help'
-@bot.message_handler(
-    func=lambda message: message.text == buttons['help']['en'] or message.text == buttons['help']['ru'])
+@bot.message_handler(func=get_message_handler_func('help'))
 def button_help(message, ):
     data = User.get_user_data(message)
 
@@ -260,8 +257,7 @@ def button_help(message, ):
 
 
 # Handle button 'menu'
-@bot.message_handler(
-    func=lambda message: message.text == buttons['menu']['en'] or message.text == buttons['menu']['ru'])
+@bot.message_handler(func=get_message_handler_func('menu'))
 def button_menu(message, ):
     data = User.get_user_data(message)
 
@@ -394,8 +390,8 @@ def add_phenomenon_manually(message):
     ph_data = callback_query_ph_manually.data[9:]
     phenomenon = Phenomenon.query.filter_by(phenomenon=ph_data, user_id=user.id).first()
 
-    btns = {value[lang] for key, value in buttons.items()}
-    inline_btns = {value[lang] for key, value in inline_buttons.items()}
+    btns = {value[lang] for key, value in button_names.items()}
+    inline_btns = {value[lang] for key, value in inline_button_names.items()}
     if msg in btns or msg in inline_btns:
         return bot.send_message(chat_id, hints['cancel'][lang])
 
@@ -529,7 +525,7 @@ def callback_phenomenon(call):
                           text=hints['phenomena intro'][lang], reply_markup=gen_markup_phenomena(user.id, lang))
     bot.answer_callback_query(
         callback_query_id=call.id, show_alert=False,
-        text=f"{hints['phenomenon set del'][lang]} {inline_buttons[phenomenon_data][lang]} {text}")
+        text=f"{hints['phenomenon set del'][lang]} {inline_button_names[phenomenon_data][lang]} {text}")
 
 
 # handle back to phenomenon button
