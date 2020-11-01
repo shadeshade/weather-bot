@@ -10,11 +10,11 @@ from app.mastermind.formating import *
 from app.mastermind.scheduling import delete_ph_time_jobs, set_phenomenon_time, set_daily, sched
 from app.mastermind.tele_buttons import phenomena_list, gen_markup_minutes, gen_markup_hours, gen_markup_phenomena, \
     gen_markup_language, call_main_keyboard, call_settings_keyboard, gen_markup_phenomena_manually, \
-    ph_manually_list
+    ph_manual_list
 from app.models import *
 
 
-@app.route('/setwebhook', methods=['GET', 'POST'])
+@app.route('/setwebhook', methods=['GET'])
 def set_webhook():
     bot.remove_webhook()
     if DEBUG:
@@ -123,7 +123,7 @@ def button_phenomena(message, ):
         return bot.send_message(data['chat_id'], hints['no city'][data['lang']])
 
     response = hints['phenomena intro'][data['lang']]
-    bot.send_message(data['chat_id'], text=response, reply_markup=gen_markup_phenomena(data['user'].id, data['user']))
+    bot.send_message(data['chat_id'], text=response, reply_markup=gen_markup_phenomena(data['user'].id, data['lang']))
 
 
 # Handle button 'city'
@@ -188,9 +188,11 @@ def button_language(message, ):
 @bot.message_handler(
     func=lambda message: message.text == buttons['info']['en'] or message.text == buttons['info']['ru'])
 def button_info(message, ):
+
     data = User.get_user_data(message)
-    all_phenomena = Phenomenon.query.filter_by(user_id=data['user'].id).all()
-    all_man_phenomena = PhenomenonManually.query.filter_by(user_id=data['user'].id).all()
+    selected_phenomena = Phenomenon.query.filter_by(user_id=data['user'].id).all()
+    all_phenomena = [ph for ph in selected_phenomena if ph.phenomenon in phenomena_list]
+    all_manual_phenomena = [ph for ph in selected_phenomena if ph.phenomenon in ph_manual_list]
     all_daily = ReminderTime.query.filter_by(user_id=data['user'].id).all()
 
     daily_text = ''
@@ -212,7 +214,7 @@ def button_info(message, ):
         ph_text = f"{info[data['lang']][13]}\n"
 
     man_ph_text = ''
-    for man_ph in all_man_phenomena:
+    for man_ph in all_manual_phenomena:
         if man_ph.phenomenon == ph_info['wind speed']['en'].lower():
             unit = f' {info[data["lang"]][10]}'  # m/s
         elif man_ph.phenomenon == ph_info['humidity']['en'].lower():
@@ -390,7 +392,7 @@ def add_phenomenon_manually(message):
     user = User.query.filter_by(chat_id=chat_id).first()
     lang = user.language
     ph_data = callback_query_ph_manually.data[9:]
-    phenomenon = PhenomenonManually.query.filter_by(phenomenon=ph_data, user_id=user.id).first()
+    phenomenon = Phenomenon.query.filter_by(phenomenon=ph_data, user_id=user.id).first()
 
     btns = {value[lang] for key, value in buttons.items()}
     inline_btns = {value[lang] for key, value in inline_buttons.items()}
@@ -415,9 +417,9 @@ def add_phenomenon_manually(message):
                 chat_id, f"{ph_data.capitalize()} {hints['phenomenon delete'][lang]}",
                 reply_markup=gen_markup_phenomena_manually(user.id, lang))
 
-    elif ph_data in ph_manually_list:  # if user enters a wrong number
+    elif ph_data in ph_manual_list:  # if user enters a wrong number
         text = None
-        if ph_data in ph_manually_list[0] or ph_data in ph_manually_list[2:]:
+        if ph_data in ph_manual_list[0] or ph_data in ph_manual_list[2:]:
             if msg < 0:
                 text = f"{hints['num pos expected'][lang]}"
         elif ph_data == 'negative temperature' and msg > 0:
@@ -430,7 +432,7 @@ def add_phenomenon_manually(message):
         phenomenon.value = msg
     except AttributeError as e:
         logger.error(f'The phenomenon has not been found.\n{repr(e)}')
-        new_phenomenon = PhenomenonManually(phenomenon=ph_data, value=msg, user_id=user.id)
+        new_phenomenon = Phenomenon(phenomenon=ph_data, value=msg, user_id=user.id)
         db.session.add(new_phenomenon)
     finally:
         db.session.commit()
@@ -444,24 +446,24 @@ def add_phenomenon_manually(message):
 def callback_all_manually_phenomena(call):
     """add all man phenomena to db"""
     user = User.query.filter_by(chat_id=call.from_user.id).first()
-    user_id = user.id
-    lang = user.language
 
-    all_ph_from_db = PhenomenonManually.query.filter_by(user_id=user_id).all()
+    all_ph_from_db = Phenomenon.query.filter_by(user_id=user.id).all()
+    all_ph_from_db = [ph for ph in all_ph_from_db if ph.phenomenon in ph_manual_list]
     for ph in all_ph_from_db:
         db.session.delete(ph)
-    text = hints['all untick'][lang]
+    text = hints['all untick'][user.language]
     db.session.commit()
 
     try:
         bot.edit_message_text(
             chat_id=call.message.chat.id, message_id=call.message.message_id,
-            text=hints['phenomena manually intro'][lang],
-            reply_markup=gen_markup_phenomena_manually(user_id, lang))
+            text=hints['phenomena manually intro'][user.language],
+            reply_markup=gen_markup_phenomena_manually(user.id, user.language))
     except:
         pass
     finally:
-        bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=f"{hints['remove manually'][lang]}")
+        bot.answer_callback_query(
+            callback_query_id=call.id, show_alert=False, text=f"{hints['remove manually'][user.language]}")
 
 
 # handle all manually phenomena db
@@ -550,14 +552,12 @@ def gen_markup_daily(user_id):
 @bot.callback_query_handler(func=lambda call: "hr" in call.data)
 def callback_inline_daily_min(call):
     user = User.query.filter_by(chat_id=call.from_user.id).first()
-    user_id = user.id
-    lang = user.language
     hours = call.data[:2]
 
-    markup = gen_markup_minutes(user_id=user_id, hours=hours, model=ReminderTime, lang=lang)
+    markup = gen_markup_minutes(user_id=user.id, hours=hours, model=ReminderTime, lang=user.language)
 
     bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
-                          text=hints['time daily'][lang], reply_markup=markup)
+                          text=hints['time daily'][user.language], reply_markup=markup)
 
 
 @bot.callback_query_handler(func=lambda call: 'min' in call.data)

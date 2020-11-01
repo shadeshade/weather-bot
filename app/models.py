@@ -9,7 +9,7 @@ class User(db.Model):
     city_name = db.Column(db.String(20), )
     reminder_time = db.relationship('ReminderTime', backref='telegram_user', lazy=True)
     phenomenon_time = db.relationship('PhenomenonTime', backref='telegram_user', lazy=True)
-    phenomenon = db.relationship('Phenomenon', backref='telegram_phenomenon', lazy=True)
+    phenomenon = db.relationship('Phenomenon', backref='telegram_user', lazy=True)
     language = db.Column(db.String(2))
 
     def __repr__(self):
@@ -35,11 +35,13 @@ class User(db.Model):
         return data_dict
 
 
+# todo: Merge tables ReminderTime and PhenomenonTime into one
+# todo: make job_ib into string type
 class ReminderTime(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     hours = db.Column(db.Integer)
     minutes = db.Column(db.Integer)
-    job_id = db.Column(db.Integer, unique=True)
+    job_id = db.Column(db.String, unique=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
     def __repr__(self):
@@ -50,7 +52,7 @@ class PhenomenonTime(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     hours = db.Column(db.Integer)
     minutes = db.Column(db.Integer)
-    job_id = db.Column(db.Integer, unique=True)
+    job_id = db.Column(db.String, unique=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
     def __repr__(self):
@@ -59,18 +61,22 @@ class PhenomenonTime(db.Model):
 
 class Phenomenon(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    phenomenon = db.Column(db.String, unique=True)
+    phenomenon = db.Column(db.String)
+    value = db.Column(db.Integer, default=None)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
     def __repr__(self):
-        return f"Phenomenon({self.phenomenon})"
+        return f"\nPhenomenon {self.phenomenon} is set to {self.value}"
+        # return f"Phenomenon{self.phenomenon}"
 
 
-class PhenomenonManually(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    phenomenon = db.Column(db.String, unique=True)
-    value = db.Column(db.Integer)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-
-    def __repr__(self):
-        return f"Phenomenon{self.phenomenon} is set to {self.value}"
+# Better to move 'value' field in Phenomenon model (and get rid of PhenomenonManually)
+# but it requires a lot of changes across the code base
+# class PhenomenonManually(db.Model):
+#     id = db.Column(db.Integer, primary_key=True)
+#     phenomenon = db.Column(db.String)
+#     value = db.Column(db.Integer)
+#     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+#
+#     def __repr__(self):
+#         return f"Phenomenon{self.phenomenon} is set to {self.value}"

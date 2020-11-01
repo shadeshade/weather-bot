@@ -1,10 +1,12 @@
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, KeyboardButton, ReplyKeyboardMarkup
 
 from app.data.localization import inline_buttons, buttons
-from app.models import Phenomenon, User, PhenomenonManually
+from app.models import Phenomenon, User
 
 temp_buttons = ['temp_btn1', 'temp_btn2', 'temp_btn3', 'temp_btn4']
 phenomena_list = ["strong wind", "hailstorm", "hurricane", "thunderstorm", "rain", "heavy rain", "intense heat"]
+ph_manual_list = ['positive temperature', 'negative temperature', 'wind speed', 'humidity']
+additional_btns = ['remove all', 'back']
 
 
 def get_main_keyboard_btns(lang, settings=False):
@@ -75,19 +77,15 @@ def gen_markup_phenomena(user_id, lang):
     return markup
 
 
-ph_manually_list = ['positive temperature', 'negative temperature', 'wind speed', 'humidity']
-additional_btns = ['remove all', 'back']
-
-
 # handle phenomenon inline keyboard
 def gen_markup_phenomena_manually(user_id, lang):
     markup = InlineKeyboardMarkup(row_width=1)
-    for idx in range(0, len(ph_manually_list) - 1, 2):
+    for idx in range(0, len(ph_manual_list) - 1, 2):
         temp_button_dict = {}
         for temp_btn in temp_buttons[:2]:
-            phenomenon = ph_manually_list[idx]
+            phenomenon = ph_manual_list[idx]
             idx += 1
-            if PhenomenonManually.query.filter_by(user_id=user_id, phenomenon=phenomenon).first():
+            if Phenomenon.query.filter_by(user_id=user_id, phenomenon=phenomenon).first():
                 tick = '✅ '
             else:
                 tick = '✖'

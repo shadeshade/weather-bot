@@ -9,7 +9,8 @@ from app.data import emoji_conditions
 from app.data.localization import hints, info, ph_info
 from app.data.utils import get_city_data
 from app.mastermind.parsing import get_weather_info, get_extended_info
-from app.models import User, Phenomenon, PhenomenonManually
+from app.mastermind.tele_buttons import ph_manual_list
+from app.models import Phenomenon
 
 
 def get_start(first_name, lang):
@@ -274,7 +275,8 @@ def get_phenomenon_info(user):
             continue
         text += f'\n{existing_ph.capitalize()} {val_and_unit}'
 
-    all_man_phenomena = PhenomenonManually.query.filter_by(user_id=user.id).all()
+    all_man_phenomena = Phenomenon.query.filter_by(user_id=user.id).all()
+    all_man_phenomena = [ph for ph in all_man_phenomena if ph.phenomenon in ph_manual_list]
     for man_ph in all_man_phenomena:
         ph = ph_info[man_ph.phenomenon][user.language]
         val = man_ph.value
