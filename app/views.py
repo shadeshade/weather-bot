@@ -105,7 +105,7 @@ def button_daily(message):
     if not data['user'] or not data['city_name']:
         return bot.send_message(data['chat_id'], hints['no city'][data['lang']])
 
-    reminders = ReminderTime.query.all()
+    reminders = ReminderTime.query.filter_by(is_phenomenon=False).all()
     for reminder in reminders:
         if reminder.hours is None or reminder.minutes is None:
             db.session.delete(reminder)
@@ -114,10 +114,10 @@ def button_daily(message):
     bot.send_message(data['chat_id'], text=response, reply_markup=gen_markup_daily(data['user'].id))
 
 
-# TODO: in every view move a comment like that in docstring
-# Handle button 'phenomena'
+# TODO: in every view move a comment like this in docstring
 @bot.message_handler(func=get_message_handler_func('phenomena'))
 def button_phenomena(message, ):
+    """Handle button 'phenomena'"""
     data = User.get_user_data(message)
 
     if not data['user'] or not data['city_name']:
@@ -146,8 +146,8 @@ def button_city(message, intro=True):
     bot.register_next_step_handler(message=msg, callback=add_city)
 
 
-# Handle button 'city'
 def add_city(message):
+    """Handle button 'city'"""
     chat_id = message.chat.id
     user = User.query.filter_by(chat_id=chat_id).first()
     lang = user.language
@@ -169,9 +169,9 @@ def add_city(message):
         return button_city(message, intro=False)
 
 
-# Handle button 'language'
 @bot.message_handler(func=get_message_handler_func('language'))
 def button_language(message, ):
+    """Handle button 'language'"""
     data = User.get_user_data(message)
 
     if not data['user']:
@@ -183,15 +183,19 @@ def button_language(message, ):
     bot.send_message(chat_id=data['chat_id'], text=response, reply_markup=gen_markup_language(user_id=data['user'].id))
 
 
-# Handle button 'info'
 @bot.message_handler(func=get_message_handler_func('info'))
 def button_info(message, ):
-
+    """Handle button 'info'"""
     data = User.get_user_data(message)
-    selected_phenomena = Phenomenon.query.filter_by(user_id=data['user'].id).all()
-    all_phenomena = [ph for ph in selected_phenomena if ph.phenomenon in phenomena_list]
-    all_manual_phenomena = [ph for ph in selected_phenomena if ph.phenomenon in ph_manual_list]
-    all_daily = ReminderTime.query.filter_by(user_id=data['user'].id).all()
+    if not data['user']:
+        return bot.send_message(chat_id=message.chat.id, text=hints['set info'][data['lang']], parse_mode='html')
+
+    # selected_phenomena = Phenomenon.query.filter_by(user_id=data['user'].id).all()
+    # all_phenomena = [ph for ph in selected_phenomena if ph.phenomenon in phenomena_list]
+    # all_manual_phenomena = [ph for ph in selected_phenomena if ph.phenomenon in ph_manual_list]
+    all_phenomena = Phenomenon.query.filter_by(user_id=data['user'].id, is_manually=False).all()
+    all_manual_phenomena = Phenomenon.query.filter_by(user_id=data['user'].id, is_manually=True).all()
+    all_daily = ReminderTime.query.filter_by(user_id=data['user'].id, is_phenomenon=False).all()
 
     daily_text = ''
     for daily in all_daily:
@@ -226,7 +230,7 @@ def button_info(message, ):
     daily_btn = button_names["daily"][data['lang']]
     ph_btn = button_names["phenomena"][data['lang']]
     man_ph_btn = inline_button_names["manually"][data['lang']]
-    ph_time = PhenomenonTime.query.filter_by(user_id=data['user'].id).first()
+    ph_time = ReminderTime.query.filter_by(user_id=data['user'].id, is_phenomenon=True).first()
 
     try:
         hours = ph_time.hours
@@ -247,26 +251,26 @@ def button_info(message, ):
     bot.send_message(chat_id=message.chat.id, text=response, parse_mode='html')
 
 
-# Handle button 'help'
 @bot.message_handler(func=get_message_handler_func('help'))
 def button_help(message, ):
+    """Handle button 'help'"""
     data = User.get_user_data(message)
 
     response = hints['help intro'][data['lang']]
     bot.send_message(data['chat_id'], text=response, parse_mode='html')
 
 
-# Handle button 'menu'
 @bot.message_handler(func=get_message_handler_func('menu'))
 def button_menu(message, ):
+    """Handle button 'menu'"""
     data = User.get_user_data(message)
 
     bot.send_message(data['chat_id'], text=hints['menu'][data['lang']], reply_markup=call_main_keyboard(data['lang']))
 
 
-# Handle all other messages with content_type 'sticker' and 'text' (content_types defaults to ['text'])
 @bot.message_handler(content_types=["sticker", "text"])
 def respond(message):
+    """Handle all other messages with content_type 'sticker' and 'text' (content_types defaults to ['text'])"""
     if message.sticker:
         sticker = open('app/static/AnimatedSticker.tgs', 'rb')
         return bot.send_sticker(message.chat.id, sticker)
@@ -289,39 +293,40 @@ def respond(message):
         return bot.send_message(chat_id=data['chat_id'], text=response, parse_mode='html')
 
 
-# handle phenomenon inline keyboard time setting (hours)
 @bot.callback_query_handler(func=lambda call: call.data == "back_to_hours_ph" or call.data == "set time phenomena")
 def callback_phenomenon_time(call):
-    """imported temp_buttons"""
+    """handle phenomenon inline keyboard time setting (hours)"""
 
     user = User.query.filter_by(chat_id=call.from_user.id).first()
     lang = user.language
     user_id = user.id
 
-    markup = gen_markup_hours(user_id=user_id, model=PhenomenonTime, lang=lang, callback='_ph')
+    markup = gen_markup_hours(user_id=user_id, is_phenomenon=True, lang=lang, callback='_ph')
 
     bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
                           text=hints['phenomena time'][lang], reply_markup=markup)
 
 
-# handle phenomenon inline keyboard time setting (minutes)
 @bot.callback_query_handler(func=lambda call: 'hr_ph' in call.data)
 def callback_phenomenon_hr(call):
+    """handle phenomenon inline keyboard time setting (minutes)"""
     user = User.query.filter_by(chat_id=call.from_user.id).first()
     user_id = user.id
     lang = user.language
     hours = call.data[:2]
 
-    markup = gen_markup_minutes(user_id=user_id, hours=hours, model=PhenomenonTime, callback='_ph', lang=lang)
+    markup = gen_markup_minutes(user_id=user_id, hours=hours, is_phenomenon=True, callback='_ph', lang=lang)
 
     bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
                           text=hints['phenomena time'][lang], reply_markup=markup)
 
 
-# handle phenomenon inline keyboard
 @bot.callback_query_handler(func=lambda call: 'min_ph' in call.data)
 def callback_phenomenon_min(call):
-    """writing phenomenon time to db"""
+    """
+    handle phenomenon inline keyboard
+    writing phenomenon time to db
+    """
     user = User.query.filter_by(chat_id=call.from_user.id).first()
     user_id = user.id
     lang = user.language
@@ -329,11 +334,11 @@ def callback_phenomenon_min(call):
     phenomenon_hours = call.data[:2]
     phenomenon_minutes = call.data[3:5]
 
-    phenomenon = PhenomenonTime.query.filter_by(
-        user_id=user_id, hours=phenomenon_hours, minutes=phenomenon_minutes).first()
+    phenomenon = ReminderTime.query.filter_by(
+        user_id=user_id, hours=phenomenon_hours, minutes=phenomenon_minutes, is_phenomenon=True).first()
 
     delete_ph_time_jobs(user_id)
-    ph_reminders = PhenomenonTime.query.filter_by(user_id=user_id).all()
+    ph_reminders = ReminderTime.query.filter_by(user_id=user_id, is_phenomenon=True).all()
     for reminder in ph_reminders:
         db.session.delete(reminder)
     db.session.commit()
@@ -341,7 +346,8 @@ def callback_phenomenon_min(call):
     if phenomenon:
         text = f"{hints['schedule delete'][lang]}"
     else:
-        new_phenomenon = PhenomenonTime(user_id=user_id, hours=phenomenon_hours, minutes=phenomenon_minutes)
+        new_phenomenon = ReminderTime(user_id=user_id, hours=phenomenon_hours, minutes=phenomenon_minutes,
+                                      is_phenomenon=True)
         db.session.add(new_phenomenon)  # commits in set_phenomenon_time func
         set_phenomenon_time(new_phenomenon, new_phenomenon.hours, new_phenomenon.minutes)
         text = f"{hints['schedule set'][lang]} {phenomenon_hours}:{phenomenon_minutes}"
@@ -350,9 +356,9 @@ def callback_phenomenon_min(call):
     bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=text)
 
 
-# handle inline button 'manually'
 @bot.callback_query_handler(func=lambda call: call.data == "phenomena manually")
 def callback_button_manually(call):
+    """handle inline button 'manually'"""
     user = User.query.filter_by(chat_id=call.from_user.id).first()
     user_id = user.id
     lang = user.language
@@ -363,17 +369,18 @@ def callback_button_manually(call):
     )
 
 
-# handle phenomenon manually db
 @bot.callback_query_handler(
     func=lambda call: ("manually" in call.data and call.data != "manually remove all" and call.data != "manually back"))
 def callback_phenomenon_manually(call, intro=True):
+    """handle phenomenon manually db"""
     global callback_query_ph_manually
     callback_query_ph_manually = call
     user = User.query.filter_by(chat_id=call.from_user.id).first()
     lang = user.language
 
     if intro:  # if callback_phenomenon_manually called first time
-        text = f"{hints['phenomena temp set'][lang]}\n{hints['num expected'][lang]}"
+        text = f"{hints['phenomena temp set'][lang]}\n{hints['num expected'][lang]}" \
+               f"\n{hints['how to del'][lang]}"
     else:  # if user types incorrect msg
         text = info[lang][0]
 
@@ -381,14 +388,14 @@ def callback_phenomenon_manually(call, intro=True):
     bot.register_next_step_handler(message=msg, callback=add_phenomenon_manually)
 
 
-# handle phenomenon manually db
 def add_phenomenon_manually(message):
+    """handle phenomenon manually db"""
     msg = message.text
     chat_id = message.chat.id
     user = User.query.filter_by(chat_id=chat_id).first()
     lang = user.language
     ph_data = callback_query_ph_manually.data[9:]
-    phenomenon = Phenomenon.query.filter_by(phenomenon=ph_data, user_id=user.id).first()
+    phenomenon = Phenomenon.query.filter_by(phenomenon=ph_data, user_id=user.id, is_manually=True).first()
 
     btns = {value[lang] for key, value in button_names.items()}
     inline_btns = {value[lang] for key, value in inline_button_names.items()}
@@ -428,7 +435,7 @@ def add_phenomenon_manually(message):
         phenomenon.value = msg
     except AttributeError as e:
         logger.error(f'The phenomenon has not been found.\n{repr(e)}')
-        new_phenomenon = Phenomenon(phenomenon=ph_data, value=msg, user_id=user.id)
+        new_phenomenon = Phenomenon(phenomenon=ph_data, value=msg, user_id=user.id, is_manually=True)
         db.session.add(new_phenomenon)
     finally:
         db.session.commit()
@@ -437,17 +444,16 @@ def add_phenomenon_manually(message):
             reply_markup=gen_markup_phenomena_manually(user.id, lang))
 
 
-# handle all manually phenomena db
 @bot.callback_query_handler(func=lambda call: call.data == "manually remove all")
-def callback_all_manually_phenomena(call):
-    """add all man phenomena to db"""
+def callback_all_manual_phenomena(call):
+    """handle all manually phenomena db
+    add a manual phenomena to db"""
     user = User.query.filter_by(chat_id=call.from_user.id).first()
 
-    all_ph_from_db = Phenomenon.query.filter_by(user_id=user.id).all()
-    all_ph_from_db = [ph for ph in all_ph_from_db if ph.phenomenon in ph_manual_list]
-    for ph in all_ph_from_db:
+    manual_phenomena_from_db = Phenomenon.query.filter_by(user_id=user.id, is_manually=True).all()
+    # all_ph_from_db = [ph for ph in all_ph_from_db if ph.phenomenon in ph_manual_list]
+    for ph in manual_phenomena_from_db:
         db.session.delete(ph)
-    text = hints['all untick'][user.language]
     db.session.commit()
 
     try:
@@ -459,13 +465,16 @@ def callback_all_manually_phenomena(call):
         pass
     finally:
         bot.answer_callback_query(
-            callback_query_id=call.id, show_alert=False, text=f"{hints['remove manually'][user.language]}")
+            callback_query_id=call.id, show_alert=False,
+            text=f"{hints['remove manually'][user.language]}")
 
 
-# handle all manually phenomena db
 @bot.callback_query_handler(func=lambda call: call.data == "manually back")
 def callback_back_manually_phenomena(call):
-    """add all man phenomena to db"""
+    """
+    handle all manually phenomena db
+    add all man phenomena to db
+    """
     user = User.query.filter_by(chat_id=call.from_user.id).first()
     user_id = user.id
     lang = user.language
@@ -473,15 +482,17 @@ def callback_back_manually_phenomena(call):
                           text=hints['phenomena intro'][lang], reply_markup=gen_markup_phenomena(user.id, lang))
 
 
-# handle inline button 'all phenomena'
 @bot.callback_query_handler(func=lambda call: call.data == "all phenomena")
 def callback_all_phenomena(call):
-    """add all phenomena to db"""
+    """
+    handle inline button 'all phenomena'
+    add all phenomena to db
+    """
     user = User.query.filter_by(chat_id=call.from_user.id).first()
     user_id = user.id
     lang = user.language
 
-    all_ph_from_db = Phenomenon.query.filter_by(user_id=user_id).all()
+    all_ph_from_db = Phenomenon.query.filter_by(user_id=user_id, value=None).all()
     if len(all_ph_from_db) == 7:
         for ph in all_ph_from_db:
             db.session.delete(ph)
@@ -500,10 +511,12 @@ def callback_all_phenomena(call):
     bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=text)
 
 
-# handle phenomenon db
 @bot.callback_query_handler(func=lambda call: 'phenomenon' in call.data)
 def callback_phenomenon(call):
-    """"add phenomenon to db"""
+    """
+    handle phenomenon db
+    add phenomenon to db
+    """
     user = User.query.filter_by(chat_id=call.from_user.id).first()
     user_id = user.id
     lang = user.language
@@ -528,29 +541,29 @@ def callback_phenomenon(call):
         text=f"{hints['phenomenon set del'][lang]} {inline_button_names[phenomenon_data][lang]} {text}")
 
 
-# handle back to phenomenon button
 @bot.callback_query_handler(func=lambda call: call.data == "back_to_ph")
 def callback_inline_back_ph(call):
+    """handle back to phenomenon button"""
     user = User.query.filter_by(chat_id=call.message.chat.id).first()
     lang = user.language
     bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
                           text=hints['phenomena intro'][lang], reply_markup=gen_markup_phenomena(user.id, lang))
 
 
-# handle daily inline keyboard (hours)
 def gen_markup_daily(user_id):
+    """handle daily inline keyboard (hours)"""
     user = User.query.filter_by(id=user_id).first()
-    markup = gen_markup_hours(user_id=user_id, model=ReminderTime, lang=user.language)
+    markup = gen_markup_hours(user_id=user_id, is_phenomenon=False, lang=user.language)
     return markup
 
 
-# handle daily inline keyboard (minutes)
 @bot.callback_query_handler(func=lambda call: "hr" in call.data)
 def callback_inline_daily_min(call):
+    """handle daily inline keyboard (minutes)"""
     user = User.query.filter_by(chat_id=call.from_user.id).first()
     hours = call.data[:2]
 
-    markup = gen_markup_minutes(user_id=user.id, hours=hours, model=ReminderTime, lang=user.language)
+    markup = gen_markup_minutes(user_id=user.id, hours=hours, is_phenomenon=False, lang=user.language)
 
     bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
                           text=hints['time daily'][user.language], reply_markup=markup)
@@ -565,15 +578,16 @@ def callback_inline_daily(call):
 
     reminder_hours = call.data[:2]
     reminder_minutes = call.data[3:5]
-    existing_reminder = ReminderTime.query.filter_by(user_id=user_id, hours=reminder_hours,
-                                                     minutes=reminder_minutes).first()
+    existing_reminder = ReminderTime.query.filter_by(
+        user_id=user_id, hours=reminder_hours, minutes=reminder_minutes, is_phenomenon=False).first()
     if existing_reminder:  # if reminder exists
         sched.remove_job(job_id=existing_reminder.job_id)  # remove the time from schedule
         db.session.delete(existing_reminder)  # remove the time from db
         db.session.commit()
         text = f"{hints['schedule delete'][lang]}"
     else:  # if reminder does not exist
-        new_reminder = ReminderTime(user_id=user_id, hours=reminder_hours, minutes=reminder_minutes)
+        new_reminder = ReminderTime(
+            user_id=user_id, hours=reminder_hours, minutes=reminder_minutes, is_phenomenon=False)
         db.session.add(new_reminder)
         db.session.commit()
         set_daily(new_reminder, reminder_hours, reminder_minutes)
@@ -583,9 +597,9 @@ def callback_inline_daily(call):
     bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=text)
 
 
-# handle back to hours button
 @bot.callback_query_handler(func=lambda call: call.data == "back_to_hours")
 def callback_inline_back(call):
+    """handle back to hours button"""
     user = User.query.filter_by(chat_id=call.from_user.id).first()
     user_id = user.id
 
@@ -607,16 +621,16 @@ def callback_remove_all_daily(call):
     try:
         bot.edit_message_text(
             chat_id=call.message.chat.id, message_id=call.message.message_id, text=f"{hints['time daily'][lang]}",
-            reply_markup=gen_markup_hours(user_id=user.id, model=ReminderTime, lang=lang))
+            reply_markup=gen_markup_hours(user_id=user.id, is_phenomenon=False, lang=lang))
     except:
         pass
     finally:
         bot.answer_callback_query(callback_query_id=call.id, show_alert=False, text=f"{hints['schedule delete'][lang]}")
 
 
-# Handle button 'language'
 @bot.callback_query_handler(func=lambda call: call.data == "english" or call.data == "russian")
 def callback_inline_language(call):
+    """Handle button 'language'"""
     user = User.query.filter_by(chat_id=call.message.chat.id).first()
     new_lang = call.data[:2]
     user.language = new_lang
