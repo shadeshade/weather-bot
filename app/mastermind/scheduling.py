@@ -1,7 +1,7 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 
 from app import bot, db
-from app.mastermind.formating import get_response, get_phenomenon_info
+from app.mastermind.formating import get_today_weather_info, get_phenomenon_info
 from app.models import User, ReminderTime
 
 sched = BackgroundScheduler()
@@ -24,7 +24,7 @@ def set_daily(new_reminder, hours, minutes, ):
 # Handle '/daily' (sending a reminder)
 def daily_info(user_id, set_time):
     user = User.query.filter_by(id=user_id).first()
-    response = get_response(user.city_name, user.language, set_time)
+    response = get_today_weather_info(user.city_name, user.language, set_time)
 
     bot.send_message(user.chat_id, text=response, parse_mode='html')
 

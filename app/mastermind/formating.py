@@ -8,7 +8,7 @@ from app import logger
 from app.data import emoji_conditions
 from app.data.localization import hints, info, ph_info
 from app.data.utils import get_city_data
-from app.mastermind.parsing import get_weather_info, get_extended_info
+from app.mastermind.parsing import get_weather_info, get_extended_info, get_extended_info_for_week
 from app.mastermind.tele_buttons import ph_manual_list
 from app.models import Phenomenon
 
@@ -80,8 +80,8 @@ def get_condition(cond, day_part):
     return condition.title()
 
 
-def get_response(city_name, lang, timestamp):
-    """basic function"""
+def get_today_weather_info(city_name, lang, cur_timestamp):
+    """basic function to get weather info for today"""
 
     transliterated_city = transliterate_name(city_name)
 
@@ -118,7 +118,7 @@ def get_response(city_name, lang, timestamp):
     sunrise = weather_info["sunrise"]
     sunset = weather_info["sunset"]
 
-    day_time = get_day_part(timestamp, sunset)
+    day_time = get_day_part(cur_timestamp, sunset)
     weather_cond = get_condition(cond, day_time)
 
     message_part1 = f'<i>{header}</i>\n\n' \
@@ -176,27 +176,26 @@ def get_next_day(city_name, lang, phenomenon_info=False):
 def get_next_week(city, lang):
     """get next 7 day's weather info"""
     transliterated_city = transliterate_name(city)
-    extended_info = get_extended_info(transliterated_city, 'week', lang)
+    extended_info = get_extended_info_for_week(transliterated_city, lang)
     response_message = ''
-    weather_city = extended_info['weather_city']
-    try:
-        for day in extended_info.values():
-            day_info_message = ''
-            for day_part in day.values():
-                try:
-                    weather_daypart = day_part['weather_daypart'].title()
-                    weather_daypart_temp = day_part['weather_daypart_temp']
-                    weather_daypart_condition = day_part['weather_daypart_condition']
-                    wind_speed_and_direction = day_part['wind_speed_and_direction']
-                    weather_cond = get_condition(weather_daypart_condition, weather_daypart)
-                    day_info_message += f'{weather_daypart}: {weather_daypart_temp}; ' \
-                                        f' {wind_speed_and_direction} {weather_cond}\n'
-                except TypeError as e:
-                    logger.info(f'End of the day\n{repr(e)}')
-                    day_info_message = f'\n<i><b>{day_part}</b></i>\n{day_info_message}'  # date + weather info
-            response_message += day_info_message
-    except AttributeError as e:
-        logger.info(f'End of the week\n{e}')
+    weather_city = extended_info.pop('weather_city')
+    for day in extended_info.values():
+        day_info_message = ''
+        for day_part_key, day_part_value in day.items():
+            if 'part' not in day_part_key:
+                continue
+
+            weather_daypart = day_part_value['weather_daypart'].title()
+            weather_daypart_temp = day_part_value['weather_daypart_temp']
+            weather_daypart_condition = day_part_value['weather_daypart_condition']
+            wind_speed_and_direction = day_part_value['wind_speed_and_direction']
+            weather_cond = get_condition(weather_daypart_condition, weather_daypart)
+            day_info_message += f'{weather_daypart}: {weather_daypart_temp}; ' \
+                                f' {wind_speed_and_direction} {weather_cond}\n'
+
+        weather_date = day['weather_date']
+        day_info_message = f'\n<i><b>{weather_date}</b></i>\n{day_info_message}'  # date + weather info
+        response_message += day_info_message
 
     response_message = f'<i>{weather_city}. {info[lang][8]}</i>\n{response_message}'
 

@@ -14,6 +14,27 @@ from app.mastermind.tele_buttons import phenomena_list, gen_markup_minutes, gen_
 from app.models import *
 
 
+def get_message_handler_func(button_key):
+    return lambda message: message.text == button_names[button_key]['en'] or \
+                           message.text == button_names[button_key]['ru']
+
+
+def view_pre_process_actions(check_city_present=False):
+    def decorator(function):
+        def wrapper(message):
+            data = User.get_user_data(message)
+            if check_city_present and (not data['user'] or not data['city_name']):
+                return bot.send_message(chat_id=data['chat_id'],
+                                        text=hints['no city'][data['lang']],
+                                        parse_mode='html')
+
+            return function(message, data)
+
+        return wrapper
+
+    return decorator
+
+
 @app.route('/setwebhook', methods=['GET'])
 def set_webhook():
     bot.remove_webhook()
@@ -36,9 +57,9 @@ def get_update():
 
 
 @bot.message_handler(commands=['start'])
-def command_start(message, ):
+@view_pre_process_actions()
+def command_start(message, data):
     """Handle '/start'"""
-    data = User.get_user_data(message)
     if not data['user']:
         new_user = User(username=data['username'], chat_id=data['chat_id'], language=data['lang'])
         db.session.add(new_user)
@@ -49,54 +70,38 @@ def command_start(message, ):
                      reply_markup=call_main_keyboard(data['lang']), parse_mode='html')
 
 
-def get_message_handler_func(button_key):
-    return lambda message: message.text == button_names[button_key]['en'] or \
-                           message.text == button_names[button_key]['ru']
-
-
 @bot.message_handler(func=get_message_handler_func('weather now'))
-def button_weather_now(message, ):
+@view_pre_process_actions(check_city_present=True)
+def button_weather_now(message, data):
     """Handle button 'weather now'"""
-    data = User.get_user_data(message)
-
-    if not data['user'] or not data['city_name']:
-        return bot.send_message(chat_id=data['chat_id'], text=hints['no city'][data['lang']], parse_mode='html')
-
-    response = get_response(data['city_name'], data['lang'], message.date)
+    response = get_today_weather_info(data['city_name'], data['lang'], message.date)
     bot.send_message(chat_id=data['chat_id'], text=response, parse_mode='html')
 
 
 @bot.message_handler(func=get_message_handler_func('for tomorrow'))
-def button_tomorrow(message, ):
+@view_pre_process_actions(check_city_present=True)
+def button_tomorrow(message, data):
     """Handle button 'for tomorrow'"""
-    data = User.get_user_data(message)
-
-    if not data['user'] or not data['city_name']:
-        return bot.send_message(chat_id=data['chat_id'], text=hints['no city'][data['lang']], parse_mode='html')
-
     response = get_next_day(data['city_name'], data['lang'], phenomenon_info=False)
     bot.send_message(chat_id=data['chat_id'], text=response, parse_mode='html')
 
 
 @bot.message_handler(func=get_message_handler_func('for a week'))
-def button_week(message, ):
+@view_pre_process_actions(check_city_present=True)
+def button_week(message, data):
     """Handle button 'for a week'"""
-    data = User.get_user_data(message)
-
-    if not data['user'] or not data['city_name']:
-        return bot.send_message(chat_id=data['chat_id'], text=hints['no city'][data['lang']], parse_mode='html')
-
     response = get_next_week(city=data['city_name'], lang=data['lang'])
     bot.send_message(chat_id=data['chat_id'], text=response, parse_mode='html')
 
 
 @bot.message_handler(func=get_message_handler_func('settings'))
-def button_settings(message, ):
+@view_pre_process_actions()
+def button_settings(message, data):
     """Handle button 'settings'"""
-    data = User.get_user_data(message)
     bot.send_message(data['chat_id'], text=info[data['lang']][9], reply_markup=call_settings_keyboard(data['lang']))
 
 
+# todo: use view_pre_process_actions everywhere
 @bot.message_handler(func=get_message_handler_func('daily'))
 def button_daily(message):
     """Handle button 'daily'"""
@@ -114,7 +119,6 @@ def button_daily(message):
     bot.send_message(data['chat_id'], text=response, reply_markup=gen_markup_daily(data['user'].id))
 
 
-# TODO: in every view move a comment like this in docstring
 @bot.message_handler(func=get_message_handler_func('phenomena'))
 def button_phenomena(message, ):
     """Handle button 'phenomena'"""
@@ -158,7 +162,7 @@ def add_city(message):
     if message.text in btns or message.text in inline_btns:
         return bot.send_message(chat_id, hints['cancel'][lang])
 
-    response = get_response(city, lang, message.date)
+    response = get_today_weather_info(city, lang, message.date)
 
     if info[lang][0] not in response:
         user.city_name = city
@@ -278,7 +282,7 @@ def respond(message):
         data = User.get_user_data(message)
 
         city = message.text
-        response = get_response(city, data['lang'], message.date)
+        response = get_today_weather_info(city, data['lang'], message.date)
 
         if 'Try again' not in response:
             if not data['user']:

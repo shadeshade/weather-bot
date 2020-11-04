@@ -7,10 +7,8 @@ from app.data.localization import info
 
 def get_weather_info(city_name, lang):
     """return the current weather info"""
-    if lang == 'ru':
-        source = requests.get('https://yandex.ru/pogoda/' + city_name)
-    else:
-        source = requests.get('https://yandex.com/pogoda/' + city_name)
+    url_ending = 'ru' if lang == 'ru' else 'com'
+    source = requests.get(f'https://yandex.{url_ending}/pogoda/{city_name}')
 
     soup = BeautifulSoup(source.content, 'html.parser')
     weather_soup = soup.find('div', attrs={'class': 'fact'})
@@ -90,57 +88,67 @@ def get_day_info(weather_rows, unit, lang):
     return daypart_dict
 
 
-def get_extended_info(city_name, command, lang):
-    """return the extended weather info of the current day for daily cast.
-    Handling 'daily', 'tomorrow', 'today', 'for a week' buttons
-    """
-    if lang == 'ru':
-        source = requests.get('https://yandex.ru/pogoda/' + city_name + '/details')
-    else:
-        source = requests.get('https://yandex.com/pogoda/' + city_name + '/details')
+def _get_extended_info_soup(city_name, lang):
+    url_ending = 'ru' if lang == 'ru' else 'com'
+    source = requests.get(f'https://yandex.{url_ending}/pogoda/{city_name}/details')
 
     soup = BeautifulSoup(source.content, 'html.parser')
     weather_unit = info[lang][10]
+    return soup, weather_unit
 
-    if command == 'daily':  # button daily
-        weather_table = soup.find('div', attrs={'class': 'card'})
-    elif command == 'tomorrow':  # button tomorrow
-        weather_table = soup.find_all('div', attrs={'class': 'card'})[2]
-    elif command == 'today':
-        weather_table = soup.find_all('div', attrs={'class': 'card'})[0]
-    else:  # button for a week
-        days_dict = dict()
-        day_count = 0
 
-        weather_city = soup.find('h1', attrs={'class': 'title title_level_1 header-title__title'}).text
-        weather_city = weather_city.split()[-1]
-
-        weather_tables = soup.find_all('div', attrs={'class': 'card'})[2:]
-        for day in weather_tables:
-            if day_count >= 7:  # output 7 days for the button 'for a week'
-                break
-            weather_day = day.find('strong', attrs={'class': 'forecast-details__day-number'}).text
-            weather_month = day.find('span', attrs={'class': 'forecast-details__day-month'}).text
-            weather_date = f'{weather_day} {weather_month}'
-            weather_rows = day.find_all('tr', attrs={'class': 'weather-table__row'})
-            day_count += 1
-
-            daypart_dict = get_day_info(weather_rows, weather_unit, lang)
-            daypart_dict['weather_date'] = weather_date
-            days_dict['day' + str(day_count)] = daypart_dict
-
-        days_dict['weather_city'] = weather_city
-        return days_dict
-
+def _get_extended_info_for_day(soup, weather_table, weather_unit, lang):
     weather_city = soup.find('h1', attrs={'class': 'title title_level_1 header-title__title'}).text
     weather_city = weather_city.split()[-1]
+
     weather_day = weather_table.find('strong', attrs={'class': 'forecast-details__day-number'}).text
     weather_month = weather_table.find('span', attrs={'class': 'forecast-details__day-month'}).text
     weather_date = f'{weather_day} {weather_month}'
     weather_rows = weather_table.find_all('tr', attrs={'class': 'weather-table__row'})
 
     daypart_dict = get_day_info(weather_rows, weather_unit, lang)
-    daypart_dict['weather_city'] = weather_city
     daypart_dict['weather_date'] = weather_date
+    daypart_dict['weather_city'] = weather_city
+    
+    return daypart_dict
+    
 
+def get_extended_info_for_week(city_name, lang):
+    """return the extended weather info of the current day for daily cast.
+    Handling 'for a week' button
+    """
+    soup, weather_unit = _get_extended_info_soup(city_name, lang)
+
+    days_dict = dict()
+
+    weather_tables = soup.find_all('div', attrs={'class': 'card'})[2:]
+    for day_count, weather_day in enumerate(weather_tables):
+        if day_count >= 7:  # output 7 days for the button 'for a week'
+            break
+
+        daypart_dict = _get_extended_info_for_day(soup, weather_day, weather_unit, lang)
+        days_dict['day' + str(day_count)] = daypart_dict
+
+    try:
+        days_dict['weather_city'] = days_dict['day0']['weather_city']
+    except KeyError:
+        days_dict['weather_city'] = ''
+
+    return days_dict
+
+
+def get_extended_info(city_name, command, lang):
+    """return the extended weather info of the current day for daily cast.
+    Handling 'daily', 'tomorrow', 'today' buttons
+    """
+    soup, weather_unit = _get_extended_info_soup(city_name, lang)
+
+    if command == 'daily':  # button daily
+        weather_table = soup.find('div', attrs={'class': 'card'})
+    elif command == 'tomorrow':  # button tomorrow
+        weather_table = soup.find_all('div', attrs={'class': 'card'})[2]
+    else:
+        weather_table = soup.find_all('div', attrs={'class': 'card'})[0]
+
+    daypart_dict = _get_extended_info_for_day(soup, weather_table, weather_unit, lang)
     return daypart_dict
