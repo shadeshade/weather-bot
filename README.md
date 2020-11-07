@@ -28,7 +28,7 @@ Now go back to the deploy tab and proceed with the steps:
 * login to heroku: `heroku login` . Note that sometimes this method get stuck in waiting for login,
  if this is the case with you, you can login using: `heroku login -i`
 
-Here we clone our repository and open 
+Here we clone our repository and open
 in development environment:
 ```
 git clone "https://github.com/shadeshade/weather_bot.git"
