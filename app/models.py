@@ -15,21 +15,24 @@ class User(db.Model):
         return f"User('{self.username}', '{self.chat_id}', '{self.city_name}')"
 
     @staticmethod
-    def get_user_data(message):
+    def get_or_create_user_data(message):
         chat_id = message.chat.id
         user = User.query.filter_by(chat_id=chat_id).first()
-        if not user:
-            city_name = None
-            lang = message.from_user.language_code
-        else:
-            city_name = user.city_name
-            lang = user.language
-
         try:
             username = message.from_user.first_name
         except AttributeError as err:
             logger.warning(f'Couldn\'t get first name from Telegram API, error: {err}')
             username = ''
+
+        if not user:
+            city_name = None
+            lang = message.from_user.language_code
+            user = User(username=username, chat_id=chat_id, language=lang)
+            db.session.add(user)
+            db.session.commit()
+        else:
+            city_name = user.city_name
+            lang = user.language
 
         return {'user': user, 'username': username, 'city_name': city_name, 'chat_id': chat_id, 'lang': lang}
 
