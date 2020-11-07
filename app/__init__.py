@@ -28,5 +28,4 @@ logger = logging.getLogger()
 # logger.addHandler(handler)
 # logger.setLevel(logging.DEBUG)
 
-if __name__ == '__main__':
-    app.run(threaded=True)
+app.run(threaded=True)
