@@ -15,13 +15,14 @@ From your dashboard on Heroku create a new app, once you create
  an app it will direct you to the deploy page.
  
 Take example values from `.example.env` (modify if needed) 
-and set them in your dashboard
+and set them in your dashboard (Settings -> Config Vars)
 
-Needed modifications:
+Needed variables (from `.example.env`):
 - `DEBUG = false`
 - Open the settings tab in new window and copy the domain of the app which will be 
  something like `https://appname.herokuapp.com/` and paste it in 
  the `HEROKU_DEPLOY_DOMAIN` environment variable
+- `TOKEN` - put your bot's token
  
 Now go back to the deploy tab and proceed with the steps:
 * login to heroku: `heroku login` . Note that sometimes this method get stuck in waiting for login,
@@ -35,7 +36,7 @@ cd weather_bot
 ```
 Create an empty app on Heroku:
 ```
-heroku create
+heroku git:remote -a {your app name}
 git remote -v
 ```
 
@@ -77,9 +78,11 @@ cd weather_bot
 
 4. Setup environment variables in `.env` file basing on `.exampe.env` file.
 
-    Needed modifications:
+    Needed variables (from `.example.env`):
     - `DEBUG = true`
     - Set the variable `NGROK_DEPLOY_DOMAIN` to a value you 
     got on a previous step
+    - `TOKEN` - put your bot's token
+    - `PORT` and `SERVER_IP`
 
 5. Now you can start your bot: `python run.py` 
