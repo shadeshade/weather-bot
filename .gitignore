@@ -1,10 +1,8 @@
 .idea
 __pycache__
 ngrok.exe
-.env
 *.log
 *.db
 shade-weather-telegram-bot
 .example.env
 protected-peak-33113
-/venv/
