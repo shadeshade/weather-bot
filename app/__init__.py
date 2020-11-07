@@ -27,5 +27,3 @@ logger = logging.getLogger()
 # logger = logging.getLogger()
 # logger.addHandler(handler)
 # logger.setLevel(logging.DEBUG)
-
-app.run(threaded=True)
