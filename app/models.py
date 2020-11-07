@@ -33,18 +33,6 @@ class User(db.Model):
 
         return {'user': user, 'username': username, 'city_name': city_name, 'chat_id': chat_id, 'lang': lang}
 
-    @staticmethod
-    def get_user_call_data(call):
-        user = User.query.filter_by(chat_id=call.from_user.id).first()
-        user_id = user.id
-        lang = user.language
-
-        return {
-            'user': user,
-            'user_id': user_id,
-            'lang': lang
-        }
-
 
 class ReminderTime(db.Model):
     id = db.Column(db.Integer, primary_key=True)
