@@ -6,3 +6,5 @@ ngrok.exe
 shade-weather-telegram-bot
 .example.env
 protected-peak-33113
+/venv/
+/.env
