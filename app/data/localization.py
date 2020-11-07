@@ -1,4 +1,4 @@
-buttons = {
+button_names = {
     'weather now': {'en': '🧙🏻‍♀ Weather now', 'ru': '🧙🏻‍♀ Погода сейчас'},
     'for tomorrow': {'en': '🧙🏼 For tomorrow', 'ru': '🧙🏼 На завтра'},
     'for a week': {'en': '🧙🏿‍♂ For a week', 'ru': '🧙🏿‍♂ На неделю'},
@@ -12,7 +12,7 @@ buttons = {
     'menu': {'en': '↩ Menu', 'ru': '↩ Меню'},
 }
 
-inline_buttons = {
+inline_button_names = {
     'strong wind': {'en': 'Strong wind', 'ru': 'Сильный ветер'},
     'hailstorm': {'en': 'Hailstorm', 'ru': 'Град'},
     'hurricane': {'en': 'Hurricane', 'ru': 'Ураган'},
@@ -50,14 +50,17 @@ hints = {
         'en': 'Select phenomena and time at which you would like to receive notifications',
         'ru': 'Выберите события и время в которое вы хотели бы получать оповещения'},
     'phenomena manually intro': {
-        'en': 'Here you can configure phenomena in more detail',
-        'ru': 'Здесь вы можете настроить события более детально'},
-        'remove manually': {
-        'en': 'All phenomena removed',
-        'ru': 'Все события удалены'},
+        'en': 'Here you can configure phenomena in more detail.',
+        'ru': 'Здесь вы можете настроить события более детально.'},
+    'remove manually': {
+        'en': 'All phenomena removed.',
+        'ru': 'Все события удалены.'},
+    'how to del': {
+        'en': 'Enter zero to delete.',
+        'ru': 'Введите ноль, чтобы удалить.'},
     'num expected': {
-        'en': 'Enter a number to set the temperature',
-        'ru': 'Чтобы установить температуру, введите число'},
+        'en': 'Enter a number to set the temperature.',
+        'ru': 'Чтобы установить температуру, введите число.'},
     'num pos expected': {
         'en': 'The number must be positive',
         'ru': 'Число должно быть положительным'},
@@ -75,7 +78,7 @@ hints = {
     'phenomenon tomorrow': {'en': 'Expected tomorrow:', 'ru': 'Завтра ожидается:'},
     'phenomenon': {'en': 'Phenomenon', 'ru': 'Событие'},
     'all tick': {'en': 'All phenomena are chosen', 'ru': 'Все события отмечены'},
-    'all untick': {'en': 'All phenomena are removed', 'ru': 'Все события отключены'},
+    'all untick': {'en': 'All phenomena are removed', 'ru': 'Все события удалены'},
     'phenomena time': {'en': 'Set the time you want to receive phenomenon information',
                        'ru': 'Выберите время в которое вы хотите получать оповещение'},
     'city intro': {
@@ -87,6 +90,7 @@ hints = {
                    'ru': 'Здесь вы можете выбрать необходимый язык'},
     'lang chosen': {'en': 'English has been chosen',
                     'ru': 'Русский язык выбран'},
+    'set info': {'en': 'No data', 'ru': 'Нет данных'},
     'help intro': {
         'en': '<b>Hello, below is a list of buttons and their functions with which I can work.</b>'
               '\n\n<b>Weather now:</b>\nGet information about the current weather.'
@@ -127,6 +131,7 @@ info = {
 }
 
 
+# Localized information about various phenomena
 ph_info = {
     'strong wind': {'en': 'Strong wind', 'ru': 'Сильный ветер'},
     'hailstorm': {'en': 'Hailstorm', 'ru': 'Град'},
