@@ -23,7 +23,6 @@ bot = telebot.TeleBot(TOKEN)
 logging.basicConfig(filename=os.path.join(BASE_DIR, 'log.log'), level=logging.DEBUG)
 logger = logging.getLogger()
 
-# handler = logging.FileHandler(os.path.join(BASE_DIR, 'log.log'), 'w', encoding='utf8')
-# logger = logging.getLogger()
-# logger.addHandler(handler)
-# logger.setLevel(logging.DEBUG)
+
+def get_app():
+    return app
