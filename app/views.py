@@ -328,7 +328,6 @@ def callback_button_manually(call):
     )
 
 
-############################################
 @bot.callback_query_handler(
     func=lambda call: ("manually" in call.data and call.data != "manually remove all" and call.data != "manually back"))
 def callback_phenomenon_manually(call, intro=True):
