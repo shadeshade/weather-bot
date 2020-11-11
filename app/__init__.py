@@ -25,8 +25,8 @@ bot = telebot.TeleBot(TOKEN)
 logging.basicConfig(filename=os.path.join(BASE_DIR, 'log.log'), level=logging.DEBUG)
 logger = logging.getLogger()
 
+# set_webhook()
+# back_up_reminders()
 
 def get_app():
-    set_webhook()
-    back_up_reminders()
     return app
