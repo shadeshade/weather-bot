@@ -24,5 +24,4 @@ logging.basicConfig(filename=os.path.join(BASE_DIR, 'log.log'), level=logging.DE
 logger = logging.getLogger()
 
 
-def get_app():
-    return app
+
