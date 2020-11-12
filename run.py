@@ -1,4 +1,4 @@
-from app import app, get_app
+from app import app
 from app.mastermind.scheduling import back_up_reminders
 from app.views import set_webhook
 from app.credentials import SERVER_IP, PORT, DEBUG
