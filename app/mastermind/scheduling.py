@@ -66,4 +66,3 @@ def back_up_reminders():
     phenomenon_reminders = ReminderTime.query.filter_by(is_phenomenon=True).all()
     for ph_reminder in phenomenon_reminders:
         set_phenomenon_time(ph_reminder, ph_reminder.hours, ph_reminder.minutes)
-

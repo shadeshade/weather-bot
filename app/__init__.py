@@ -2,21 +2,27 @@ import logging
 import os
 
 import telebot
+from dotenv import load_dotenv
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 
 from app.credentials import TOKEN
-from app.mastermind.scheduling import back_up_reminders
-from app.views import set_webhook
+
+load_dotenv(dotenv_path='.env')
 
 CUR_DIR = os.path.dirname(os.path.realpath(__file__))
 BASE_DIR = os.path.dirname(CUR_DIR)
 
 app = Flask(__name__)
 
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
-path_to_db = os.path.join(BASE_DIR, 'bot.db')
-app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{path_to_db}'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
+
+# path_to_db = os.path.join(BASE_DIR, 'bot.db')
+# app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{path_to_db}'
+# a = f'sqlite:///{path_to_db}'
+# b = os.path.dirname(os.getenv("SQLALCHEMY_DATABASE_URI"))
+
 
 db = SQLAlchemy(app)
 
@@ -26,7 +32,10 @@ logging.basicConfig(filename=os.path.join(BASE_DIR, 'log.log'), level=logging.DE
 logger = logging.getLogger()
 
 
-def get_app():
-    set_webhook()
-    back_up_reminders()
-    return app
+def create_app(config_file='settings.py'):
+    from app.commands import create_tables
+
+    _app = app
+    app.cli.add_command(create_tables)
+
+    return _app

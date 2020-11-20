@@ -1,3 +1,3 @@
-from app import get_app
+from app import create_app
 
-server = get_app()
+server = create_app()
