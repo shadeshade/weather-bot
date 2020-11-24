@@ -22,8 +22,8 @@ inline_button_names = {
     'fog': {'en': 'Fog', 'ru': 'Туман'},
     'intense heat': {'en': 'Intense heat', 'ru': 'Сильная жара'},
     'manually': {'en': 'Manually', 'ru': 'Вручную'},
-    'positive temperature': {'en': 'Positive temperature', 'ru': 'Положительная температура'},
-    'negative temperature': {'en': 'Negative temperature', 'ru': 'Отрицательная температура'},
+    'positive temperature': {'en': 'Temperature is more than', 'ru': 'Температура больше чем'},
+    'negative temperature': {'en': 'Temperature is less than', 'ru': 'Температура меньше чем'},
     'wind speed': {'en': 'Wind speed', 'ru': 'Скорость ветра'},
     'humidity': {'en': 'Humidity', 'ru': 'Влажность'},
     'all phenomena': {'en': 'All phenomena', 'ru': 'Все события'},
@@ -59,18 +59,18 @@ hints = {
         'en': 'Enter zero to delete.',
         'ru': 'Введите ноль, чтобы удалить.'},
     'num expected': {
-        'en': 'Enter a number to set the temperature.',
-        'ru': 'Чтобы установить температуру, введите число.'},
+        'en': 'Enter a number to set the value.',
+        'ru': 'Введите число, чтобы установить значение.'},
     'num pos expected': {
         'en': 'The number must be positive',
         'ru': 'Число должно быть положительным'},
-    'num neg expected': {
-        'en': 'The number must be negative',
-        'ru': 'Число должно быть отрицательным'},
+    # 'num neg expected': {
+    #     'en': 'The number must be negative',
+    #     'ru': 'Число должно быть отрицательным'},
     'cancel': {'en': 'Canceled', 'ru': 'Отменено'},
     'phenomena temp set': {
-        'en': 'I will notify you if a certain temperature is expected tomorrow.',
-        'ru': 'Я уведомлю вас если завтра будет ожидаться установленная температура'},
+        'en': 'I will notify you if tomorrow the value you set is expected.',
+        'ru': 'Я сообщу вам, если завтра ожидается установленное вами значение.'},
     'phenomenon set del': {'en': 'The phenomenon', 'ru': 'Cобытие '},
     'phenomenon set': {'en': 'was set', 'ru': 'добавлено'},
     'ph manually set': {'en': 'was set at', 'ru': 'было установлено на'},

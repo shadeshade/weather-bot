@@ -170,6 +170,10 @@ def get_next_day(city_name, lang, phenomenon_info=False):
                             f'{info[lang][2]}: {wind_speed_and_direction}' \
                             f'\n{cond} {get_condition(cond, weather_daypart)}\n\n'
 
+    daylight_hours = f'{info[lang][4]}: {extended_info["daylight_hours"]}\n' \
+                     f'{info[lang][5]}: {extended_info["sunrise"]} - {extended_info["sunset"]}\n'
+    response_message += daylight_hours
+
     return response_message
 
 
@@ -216,17 +220,20 @@ def get_daily(city_name, lang):
 
 def get_phenomenon_info(user):
     """Handle phenomenon reminder (sending a reminder)"""
-    next_day_max_val = {'temp_positive': 0, 'temp_negative': 0, 'condition': [], 'wind': 0, 'humidity': 0}
+    next_day_max_val = {'temp_min': None, 'temp_max': None, 'condition': [], 'wind': 0, 'humidity': 0}
     next_day_info = get_next_day(user.city_name, user.language, phenomenon_info=True)
     for day_part_info in next_day_info.values():
-        if '+' in day_part_info['daypart_temp']:  # temp_positive
-            temp_positive = int(day_part_info['daypart_temp'].split('+')[-1].replace('°', ''))
-            if temp_positive > next_day_max_val['temp_positive']:
-                next_day_max_val['temp_positive'] = temp_positive
-        elif '-' in day_part_info['daypart_temp']:  # temp_negative
-            daypart_temp_negative = int(day_part_info['daypart_temp'].split('-')[-1].replace('°', ''))
-            if daypart_temp_negative > next_day_max_val['temp_negative']:
-                next_day_max_val['temp_negative'] = daypart_temp_negative
+
+        temperature = int(day_part_info['daypart_temp'].replace('°', ''))
+
+        if next_day_max_val['temp_min'] is None:
+            next_day_max_val['temp_min'] = temperature
+            next_day_max_val['temp_max'] = temperature
+        else:
+            if temperature < next_day_max_val['temp_min']:
+                next_day_max_val['temp_min'] = temperature
+            elif temperature > next_day_max_val['temp_max']:
+                next_day_max_val['temp_max'] = temperature
 
         condition = day_part_info['daypart_condition']  # condition
         next_day_max_val['condition'] += [condition.lower()]
@@ -239,8 +246,8 @@ def get_phenomenon_info(user):
         if humidity > next_day_max_val['humidity']:
             next_day_max_val['humidity'] = humidity
 
-    temp_positive = next_day_max_val['temp_positive']
-    temp_negative = next_day_max_val['temp_negative']
+    temp_min = next_day_max_val['temp_min']
+    temp_max = next_day_max_val['temp_max']
     condition = next_day_max_val['condition']
     wind = next_day_max_val['wind']
     humidity = next_day_max_val['humidity']
@@ -265,8 +272,8 @@ def get_phenomenon_info(user):
             else:
                 continue
         elif existing_ph == ph_info["intense heat"][user.language]:
-            if temp_positive >= 30:
-                val_and_unit = f'+{temp_positive}°C'
+            if temp_max >= 30:
+                val_and_unit = f'+{temp_max}°C'
                 pass
             else:
                 continue
@@ -274,20 +281,20 @@ def get_phenomenon_info(user):
             continue
         text += f'\n{existing_ph.capitalize()} {val_and_unit}'
 
-    all_man_phenomena = Phenomenon.query.filter_by(user_id=user.id).all()
-    all_man_phenomena = [ph for ph in all_man_phenomena if ph.phenomenon in ph_manual_list]
+    all_man_phenomena = Phenomenon.query.filter_by(user_id=user.id, is_manually=True).all()
+    # all_man_phenomena = [ph for ph in all_man_phenomena if ph.phenomenon in ph_manual_list]
     for man_ph in all_man_phenomena:
         ph = ph_info[man_ph.phenomenon][user.language]
         val = man_ph.value
         if ph == ph_info['positive temperature'][user.language]:
-            if val <= temp_positive:
-                val_and_unit = f'+{temp_positive}°C'
+            if val <= temp_max:
+                val_and_unit = f'{temp_max}°C'
                 pass
             else:
                 continue
         elif ph == ph_info['negative temperature'][user.language]:
-            if val <= temp_negative:
-                val_and_unit = f'-{temp_negative}°C'
+            if val >= temp_min:
+                val_and_unit = f'{temp_min}°C'
                 pass
             else:
                 continue

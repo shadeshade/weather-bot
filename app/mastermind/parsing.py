@@ -101,6 +101,16 @@ def _get_extended_info_for_day(soup, weather_table, weather_unit, lang):
     weather_city = soup.find('h1', attrs={'class': 'title title_level_1 header-title__title'}).text
     weather_city = weather_city.split()[-1]
 
+    daylight_soup = soup.find('div', attrs={'class': 'forecast-details__right-column'})
+    daylight_hours = daylight_soup.find('dl', attrs={
+        'class': 'sunrise-sunset__description sunrise-sunset__description_value_duration'})
+    daylight_hours = daylight_hours.find('dd', attrs={
+        'class': 'sunrise-sunset__value'}).text  # daylight duration
+    sunrise = daylight_soup.find('dl', attrs={
+        'class': 'sunrise-sunset__description sunrise-sunset__description_value_sunrise'}).text[-5:]
+    sunset = daylight_soup.find('dl', attrs={
+        'class': 'sunrise-sunset__description sunrise-sunset__description_value_sunset'}).text[-5:]
+
     weather_day = weather_table.find('strong', attrs={'class': 'forecast-details__day-number'}).text
     weather_month = weather_table.find('span', attrs={'class': 'forecast-details__day-month'}).text
     weather_date = f'{weather_day} {weather_month}'
@@ -109,7 +119,10 @@ def _get_extended_info_for_day(soup, weather_table, weather_unit, lang):
     daypart_dict = get_day_info(weather_rows, weather_unit, lang)
     daypart_dict['weather_date'] = weather_date
     daypart_dict['weather_city'] = weather_city
-    
+    daypart_dict['daylight_hours'] = daylight_hours
+    daypart_dict['sunrise'] = sunrise
+    daypart_dict['sunset'] = sunset
+
     return daypart_dict
     
 

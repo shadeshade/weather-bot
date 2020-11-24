@@ -56,7 +56,7 @@ def delete_ph_time_jobs(user_id):
 
 
 def back_up_reminders():
-    """Handle '/daily'"""
+    """Handle buttons 'daily' and 'phenomena'"""
     sched.remove_all_jobs()
 
     daily_reminders = ReminderTime.query.filter_by(is_phenomenon=False).all()

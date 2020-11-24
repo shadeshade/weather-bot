@@ -1,5 +1,3 @@
-import os
-
 from app import app
 from app.credentials import SERVER_IP, PORT, DEBUG
 from app.mastermind.scheduling import back_up_reminders

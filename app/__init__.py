@@ -34,8 +34,10 @@ logger = logging.getLogger()
 
 def create_app(config_file='settings.py'):
     from app.commands import create_tables
+    app.config.from_pyfile(config_file)
 
     _app = app
-    app.cli.add_command(create_tables)
+    db.init_app(_app)
+    _app.cli.add_command(create_tables)
 
     return _app

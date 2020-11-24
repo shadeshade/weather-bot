@@ -358,8 +358,8 @@ def add_phenomenon_manually(message):
     phenomenon = Phenomenon.query.filter_by(phenomenon=ph_data, user_id=user.id, is_manually=True).first()
 
     btns = {value[lang] for key, value in button_names.items()}
-    inline_btns = {value[lang] for key, value in inline_button_names.items()}
-    if msg in btns or msg in inline_btns:
+
+    if msg in btns:
         return bot.send_message(chat_id, hints['cancel'][lang])
 
     try:  # check if msg is not a num
@@ -382,11 +382,11 @@ def add_phenomenon_manually(message):
 
     elif ph_data in ph_manual_list:  # if user enters a wrong number
         text = None
-        if ph_data in ph_manual_list[0] or ph_data in ph_manual_list[2:]:
+        if ph_data in ph_manual_list[2:]:
             if msg < 0:
                 text = f"{hints['num pos expected'][lang]}"
-        elif ph_data == 'negative temperature' and msg > 0:
-            text = f"{hints['num neg expected'][lang]}"
+        # elif ph_data == 'negative temperature' and msg > 0:
+        #     text = f"{hints['num neg expected'][lang]}"
         if text:
             bot.send_message(chat_id, text)
             return callback_phenomenon_manually(callback_query_ph_manually, intro=False)
