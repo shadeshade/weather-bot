@@ -101,7 +101,7 @@ def _get_extended_info_for_day(soup, weather_table, weather_unit, lang):
     weather_city = soup.find('h1', attrs={'class': 'title title_level_1 header-title__title'}).text
     weather_city = weather_city.split()[-1]
 
-    daylight_soup = soup.find('div', attrs={'class': 'forecast-details__right-column'})
+    daylight_soup = weather_table.find('div', attrs={'class': 'forecast-details__right-column'})
     daylight_hours = daylight_soup.find('dl', attrs={
         'class': 'sunrise-sunset__description sunrise-sunset__description_value_duration'})
     daylight_hours = daylight_hours.find('dd', attrs={
