@@ -10,7 +10,7 @@ sched = BackgroundScheduler()
 # Handle '/daily' (setting a daily reminder)
 def set_daily(new_reminder, hours, minutes, ):
     job = sched.add_job(
-        daily_info, args=[new_reminder.user_id, f'{hours}.{minutes}'],
+        send_daily_info, args=[new_reminder.user_id, f'{hours}.{minutes}'],
         trigger='cron', hour=hours, minute=minutes
     )
     job_id = job.id
@@ -22,7 +22,7 @@ def set_daily(new_reminder, hours, minutes, ):
 
 
 # Handle '/daily' (sending a reminder)
-def daily_info(user_id, set_time):
+def send_daily_info(user_id, set_time):
     user = User.query.filter_by(id=user_id).first()
     response = get_today_weather_info(user.city_name, user.language, set_time)
 
@@ -41,8 +41,9 @@ def set_phenomenon_time(new_reminder, hours, minutes):
         sched.start()
 
 
+# Handle '/phenomena' (sending a phenomenon reminder)
 def send_phenomenon_reminder(user_id):
-    user = User.query.filter_by(user_id=user_id).first()
+    user = User.query.filter_by(id=user_id).first()
     response_msg = get_phenomenon_info(user)
     if response_msg:
         bot.send_message(user.chat_id, text=response_msg, parse_mode='html')
