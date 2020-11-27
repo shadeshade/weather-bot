@@ -4,13 +4,13 @@ from typing import Dict
 import transliterate
 from transliterate.exceptions import LanguageDetectionError
 
-from app import logger
-from app.data import emoji_conditions
-from app.data.localization import hints, info, ph_info
-from app.data.utils import get_city_data
-from app.mastermind.parsing import get_weather_info, get_extended_info, get_extended_info_for_week
-from app.mastermind.tele_buttons import ph_manual_list
-from app.models import Phenomenon
+from weather_app import logger
+from weather_app.data import emoji_conditions
+from weather_app.data.localization import hints, info, ph_info
+from weather_app.data.utils import get_city_data
+from weather_app.mastermind.parsing import get_weather_info, get_extended_info, get_extended_info_for_week
+from weather_app.mastermind.tele_buttons import ph_manual_list
+from weather_app.models import Phenomenon, User
 
 
 def get_start(first_name, lang):
@@ -218,22 +218,30 @@ def get_daily(city_name, lang):
     return response_message
 
 
+# def get_phenomenon_info(user):
 def get_phenomenon_info(user):
     """Handle phenomenon reminder (sending a reminder)"""
     next_day_max_val = {'temp_min': None, 'temp_max': None, 'condition': [], 'wind': 0, 'humidity': 0}
-    next_day_info = get_next_day(user.city_name, user.language, phenomenon_info=True)
+    user_id = user.id
+    lang = user.language
+    next_day_info = get_next_day(user.city_name, lang, phenomenon_info=True)
     for day_part_info in next_day_info.values():
-
-        temperature = int(day_part_info['daypart_temp'].replace('°', ''))
+        temp = day_part_info['daypart_temp'].split('…')
+        temp_min = temp[0].replace('°', '')
+        try:
+            temp_max = temp[1].replace('°', '')
+        except IndexError as e:
+            logger.warning(f'Only one value\n{repr(e)}')
+            temp_max = temp_min
 
         if next_day_max_val['temp_min'] is None:
-            next_day_max_val['temp_min'] = temperature
-            next_day_max_val['temp_max'] = temperature
+            next_day_max_val['temp_min'] = temp_min
+            next_day_max_val['temp_max'] = temp_max
         else:
-            if temperature < next_day_max_val['temp_min']:
-                next_day_max_val['temp_min'] = temperature
-            elif temperature > next_day_max_val['temp_max']:
-                next_day_max_val['temp_max'] = temperature
+            if temp_min < next_day_max_val['temp_min']:
+                next_day_max_val['temp_min'] = temp_min
+            elif temp_max > next_day_max_val['temp_max']:
+                next_day_max_val['temp_max'] = temp_max
 
         condition = day_part_info['daypart_condition']  # condition
         next_day_max_val['condition'] += [condition.lower()]
@@ -253,25 +261,25 @@ def get_phenomenon_info(user):
     humidity = next_day_max_val['humidity']
 
     text = ''
-    all_phenomena = Phenomenon.query.filter_by(user_id=user.id).all()
+    all_phenomena = Phenomenon.query.filter_by(user_id=user_id).all()
     for phenomenon in all_phenomena:
-        existing_ph = ph_info[phenomenon.phenomenon][user.language]
+        existing_ph = ph_info[phenomenon.phenomenon][lang]
         if existing_ph in condition:
             val_and_unit = condition
             pass
-        elif existing_ph == ph_info["strong wind"][user.language]:
+        elif existing_ph == ph_info["strong wind"][lang]:
             if 29 >= wind >= 12:
-                val_and_unit = f'{wind} {info[user.language][10]}'
+                val_and_unit = f'{wind} {info[lang][10]}'
                 pass
             else:
                 continue
-        elif existing_ph == ph_info["hurricane"][user.language]:
+        elif existing_ph == ph_info["hurricane"][lang]:
             if wind >= 30:
-                val_and_unit = f'{wind} {info[user.language][10]}'
+                val_and_unit = f'{wind} {info[lang][10]}'
                 pass
             else:
                 continue
-        elif existing_ph == ph_info["intense heat"][user.language]:
+        elif existing_ph == ph_info["intense heat"][lang]:
             if temp_max >= 30:
                 val_and_unit = f'+{temp_max}°C'
                 pass
@@ -281,30 +289,30 @@ def get_phenomenon_info(user):
             continue
         text += f'\n{existing_ph.capitalize()} {val_and_unit}'
 
-    all_man_phenomena = Phenomenon.query.filter_by(user_id=user.id, is_manually=True).all()
+    all_man_phenomena = Phenomenon.query.filter_by(user_id=user_id, is_manually=True).all()
     # all_man_phenomena = [ph for ph in all_man_phenomena if ph.phenomenon in ph_manual_list]
     for man_ph in all_man_phenomena:
-        ph = ph_info[man_ph.phenomenon][user.language]
-        val = man_ph.value
-        if ph == ph_info['positive temperature'][user.language]:
-            if val <= temp_max:
+        ph = ph_info[man_ph.phenomenon][lang].lower()
+        val = int(man_ph.value)
+        if ph == ph_info['positive temperature'][lang].lower():
+            if val <= int(temp_max):
                 val_and_unit = f'{temp_max}°C'
                 pass
             else:
                 continue
-        elif ph == ph_info['negative temperature'][user.language]:
-            if val >= temp_min:
+        elif ph == ph_info['negative temperature'][lang].lower():
+            if val >= int(temp_min):
                 val_and_unit = f'{temp_min}°C'
                 pass
             else:
                 continue
-        elif ph == ph_info['wind speed'][user.language]:
+        elif ph == ph_info['wind speed'][lang].lower():
             if val <= wind:
-                val_and_unit = f'{wind} {info[user.language][10]}'
+                val_and_unit = f'{wind} {info[lang][10]}'
                 pass
             else:
                 continue
-        elif ph == ph_info['humidity'][user.language]:
+        elif ph == ph_info['humidity'][lang].lower():
             if val <= humidity:
                 val_and_unit = f'{humidity}%'
                 pass
@@ -312,13 +320,13 @@ def get_phenomenon_info(user):
                 continue
         else:
             continue
-        if ph == ph_info['positive temperature'][user.language] \
-                or ph == ph_info['negative temperature'][user.language]:
-            ph = info[user.language][11]
+        if ph == ph_info['positive temperature'][lang].lower() \
+                or ph == ph_info['negative temperature'][lang].lower():
+            ph = info[lang][11]
         text += f'\n{ph.capitalize()} {val_and_unit}'
 
     if text:
-        response_msg = f'<b>{hints["phenomenon tomorrow"][user.language]}</b>'
+        response_msg = f'<b>{hints["phenomenon tomorrow"][lang]}</b>'
         response_msg += text
         return response_msg
     else:

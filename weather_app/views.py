@@ -3,15 +3,15 @@ from flask import request
 from sqlalchemy.orm.exc import UnmappedInstanceError
 from telebot.apihelper import ApiException
 
-from app import app, bot
-from app.credentials import HEROKU_DEPLOY_DOMAIN, NGROK_DEPLOY_DOMAIN, TOKEN, DEBUG
-from app.data.localization import button_names, inline_button_names
-from app.mastermind.formating import *
-from app.mastermind.scheduling import delete_ph_time_jobs, set_phenomenon_time, set_daily, sched
-from app.mastermind.tele_buttons import phenomena_list, gen_markup_minutes, gen_markup_hours, gen_markup_phenomena, \
+from weather_app import app, bot
+from weather_app.credentials import HEROKU_DEPLOY_DOMAIN, NGROK_DEPLOY_DOMAIN, TOKEN, DEBUG
+from weather_app.data.localization import button_names, inline_button_names
+from weather_app.mastermind.formating import *
+from weather_app.mastermind.scheduling import delete_ph_time_jobs, set_phenomenon_time, set_daily, sched
+from weather_app.mastermind.tele_buttons import phenomena_list, gen_markup_minutes, gen_markup_hours, gen_markup_phenomena, \
     gen_markup_language, call_main_keyboard, call_settings_keyboard, gen_markup_phenomena_manually, \
     ph_manual_list
-from app.models import *
+from weather_app.models import *
 
 
 def get_message_handler_func(button_key):
@@ -248,7 +248,7 @@ def button_menu(message, data):
 def respond(message, data):
     """Handle all other messages with content_type 'sticker' and 'text' (content_types defaults to ['text'])"""
     if message.sticker:
-        sticker = open('app/static/AnimatedSticker.tgs', 'rb')
+        sticker = open('weather_app/static/AnimatedSticker.tgs', 'rb')
         return bot.send_sticker(message.chat.id, sticker)
     else:
         city = message.text

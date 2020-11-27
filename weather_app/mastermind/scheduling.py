@@ -1,8 +1,8 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 
-from app import bot, db
-from app.mastermind.formating import get_today_weather_info, get_phenomenon_info
-from app.models import User, ReminderTime
+from weather_app import bot, db
+from weather_app.mastermind.formating import get_today_weather_info, get_phenomenon_info
+from weather_app.models import User, ReminderTime
 
 sched = BackgroundScheduler()
 
@@ -58,11 +58,18 @@ def delete_ph_time_jobs(user_id):
 def back_up_reminders():
     """Handle buttons 'daily' and 'phenomena'"""
     sched.remove_all_jobs()
+    all_reminders = ReminderTime.query.filter_by().all()
 
-    daily_reminders = ReminderTime.query.filter_by(is_phenomenon=False).all()
+    # daily_reminders = ReminderTime.query.filter_by(is_phenomenon=False).all()
+    daily_reminders = [reminder for reminder in all_reminders if reminder.is_phenomenon is False]
     for reminder in daily_reminders:
         set_daily(reminder, reminder.hours, reminder.minutes)
 
-    phenomenon_reminders = ReminderTime.query.filter_by(is_phenomenon=True).all()
+    # phenomenon_reminders = ReminderTime.query.filter_by(is_phenomenon=True).all()
+    phenomenon_reminders = [reminder for reminder in all_reminders if reminder.is_phenomenon is True]
     for ph_reminder in phenomenon_reminders:
         set_phenomenon_time(ph_reminder, ph_reminder.hours, ph_reminder.minutes)
+
+
+if __name__ == '__main__':
+    send_phenomenon_reminder(1)

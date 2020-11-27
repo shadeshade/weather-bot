@@ -1,8 +1,8 @@
 import requests
 from bs4 import BeautifulSoup
 
-from app import logger
-from app.data.localization import info
+from weather_app import logger
+from weather_app.data.localization import info
 
 
 def get_weather_info(city_name, lang):

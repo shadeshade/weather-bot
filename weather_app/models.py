@@ -1,5 +1,5 @@
-from app import db
-from app import logger
+from weather_app import db
+from weather_app import logger
 
 
 class User(db.Model):

@@ -1,4 +1,4 @@
-from app.data import CITIES_DATA
+from weather_app.data import CITIES_DATA
 
 
 def get_city_data(city):
