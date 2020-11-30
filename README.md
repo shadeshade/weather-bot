@@ -74,7 +74,7 @@ cd weather_bot
 2. Install requirements: `pip install requirements.txt`
 
 3. `ngrok http 8443` . You will get something like this:
-![Image](weather_app/static/NgrokCapture.PNG)
+![Image](app/static/NgrokCapture.PNG)
 
 4. Setup environment variables in `.env` file basing on `.exampe.env` file.
 

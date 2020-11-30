@@ -1,7 +1,7 @@
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, KeyboardButton, ReplyKeyboardMarkup
 
-from weather_app.data.localization import inline_button_names, button_names
-from weather_app.models import Phenomenon, User, ReminderTime
+from app.data.localization import inline_button_names, button_names
+from app.models import Phenomenon, User, ReminderTime
 
 temp_buttons = ['temp_btn1', 'temp_btn2', 'temp_btn3', 'temp_btn4']
 phenomena_list = ["strong wind", "hailstorm", "hurricane", "thunderstorm", "rain", "heavy rain", "intense heat"]

@@ -4,13 +4,13 @@ from typing import Dict
 import transliterate
 from transliterate.exceptions import LanguageDetectionError
 
-from weather_app import logger
-from weather_app.data import emoji_conditions
-from weather_app.data.localization import hints, info, ph_info
-from weather_app.data.utils import get_city_data
-from weather_app.mastermind.parsing import get_weather_info, get_extended_info, get_extended_info_for_week
-from weather_app.mastermind.tele_buttons import ph_manual_list
-from weather_app.models import Phenomenon, User
+from app import logger
+from app.data import emoji_conditions
+from app.data.localization import hints, info, ph_info
+from app.data.utils import get_city_data
+from app.mastermind.parsing import get_weather_info, get_extended_info, get_extended_info_for_week
+from app.mastermind.tele_buttons import ph_manual_list
+from app.models import Phenomenon, User
 
 
 def get_start(first_name, lang):
