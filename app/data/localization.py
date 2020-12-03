@@ -12,20 +12,23 @@ button_names = {
     'menu': {'en': '↩ Menu', 'ru': '↩ Меню'},
 }
 
-inline_button_names = {
+# Phenomenon buttons and localized information about various phenomena
+phenomenon_button_names = {
     'strong wind': {'en': 'Strong wind', 'ru': 'Сильный ветер'},
-    'hailstorm': {'en': 'Hailstorm', 'ru': 'Град'},
     'hurricane': {'en': 'Hurricane', 'ru': 'Ураган'},
+    'intense heat': {'en': 'Intense heat', 'ru': 'Сильная жара'},
+
+    'hailstorm': {'en': 'Hailstorm', 'ru': 'Град'},
     'thunderstorm': {'en': 'Thunderstorm', 'ru': 'Гроза'},
     'rain': {'en': 'Rain', 'ru': 'Дождь'},
-    'heavy rain': {'en': 'Heavy rain', 'ru': 'Ливень'},
-    'fog': {'en': 'Fog', 'ru': 'Туман'},
-    'intense heat': {'en': 'Intense heat', 'ru': 'Сильная жара'},
-    'manually': {'en': 'Manually', 'ru': 'Вручную'},
-    'positive temperature': {'en': 'Temperature is more than', 'ru': 'Температура больше чем'},
-    'negative temperature': {'en': 'Temperature is less than', 'ru': 'Температура меньше чем'},
+    'heavy rain': {'en': 'Heavy rain', 'ru': 'Сильный дождь'},
+
+    'temperature more': {'en': 'Temperature is more', 'ru': 'Температура больше'},
+    'temperature less': {'en': 'Temperature is less', 'ru': 'Температура меньше'},
     'wind speed': {'en': 'Wind speed', 'ru': 'Скорость ветра'},
     'humidity': {'en': 'Humidity', 'ru': 'Влажность'},
+
+    'manually': {'en': 'Manually', 'ru': 'Вручную'},
     'all phenomena': {'en': 'All phenomena', 'ru': 'Все события'},
     'set time': {'en': 'Set time', 'ru': 'Изменить время'},
     'back': {'en': '↩ Back', 'ru': '↩ Назад'},
@@ -47,8 +50,10 @@ hints = {
         'en': 'The schedule for this time has been deleted',
         'ru': 'График на это время был удален'},
     'phenomena intro': {
-        'en': 'Select phenomena and time at which you would like to receive notifications',
-        'ru': 'Выберите события и время в которое вы хотели бы получать оповещения'},
+        'en': 'Select phenomena and time at which you would like to receive notifications of '
+              'the upcoming phenomena next day.',
+        'ru': 'Выберите события и время в которое вы хотели бы получать оповещения '
+              'о предстоящих событиях на следующий день.'},
     'phenomena manually intro': {
         'en': 'Here you can configure phenomena in more detail.',
         'ru': 'Здесь вы можете настроить события более детально.'},
@@ -64,9 +69,6 @@ hints = {
     'num pos expected': {
         'en': 'The number must be positive',
         'ru': 'Число должно быть положительным'},
-    # 'num neg expected': {
-    #     'en': 'The number must be negative',
-    #     'ru': 'Число должно быть отрицательным'},
     'cancel': {'en': 'Canceled', 'ru': 'Отменено'},
     'phenomena temp set': {
         'en': 'I will notify you if tomorrow the value you set is expected.',
@@ -80,7 +82,7 @@ hints = {
     'all tick': {'en': 'All phenomena are chosen', 'ru': 'Все события отмечены'},
     'all untick': {'en': 'All phenomena are removed', 'ru': 'Все события удалены'},
     'phenomena time': {'en': 'Set the time you want to receive phenomenon information',
-                       'ru': 'Выберите время в которое вы хотите получать оповещение'},
+                       'ru': 'Выберите время в которое вы хотите получать оповещения'},
     'city intro': {
         'en': 'Here you can change the city. To do this, just enter the name of the city',
         'ru': 'Здесь вы можете изменить свой город. Для этого просто введите название города'},
@@ -97,8 +99,8 @@ hints = {
               '\n\n<b>For tomorrow:</b>\nGet information about the weather for tomorrow.'
               '\n\n<b>For a week:</b>\nGet weather information for the next 7 days.'
               '\n\n<b>Daily:</b>\nSet daily time you want to receive weather information.'
-              '\n\n<b>Phenomena:</b>\nSelect phenomena and time at which you would like to receive notification of'
-              ' an upcoming phenomenon.'
+              '\n\n<b>Phenomena:</b>\nSelect phenomena and time at which you would like to receive notifications of'
+              ' an upcoming phenomenon next day.'
               '\n\n<b>City:</b>\nChoose your city.'
               '\n\n<b>Language:</b>\nChoose your language.'
               '\n\n<b>Info:</b>\nDisplays a message with the phenomena and times you chose.'
@@ -113,7 +115,7 @@ hints = {
               '\n\n<b>События:</b>\nВыбрать события и время получения оповещения о предстоящем событии.'
               '\n\n<b>Город:</b>\nВыберите ваш город.'
               '\n\n<b>Язык:</b>\nВыберите ваш язык.'
-              '\n\n<b>Инфо:</b>\nОтображает сообщение с выбранными вами явлениями и временем.'
+              '\n\n<b>Инфо:</b>\nОтображает сообщение с выбранными вами событиями и временем.'
               '\n\nТакже вы можете ввести название города и получить информацию, не меняя ранее установленный город.'
     },
 }
@@ -128,20 +130,4 @@ info = {
         'Попробуйте еще раз', 'Сейчас', 'Ветер', 'Ощущается как', 'Световой день', 'Восход - Закат', 'на', 'Штиль',
         'Погода на 7 дней', 'Настройки', 'м/с', 'Температура', 'Время', 'не задано'
     ],
-}
-
-
-# Localized information about various phenomena
-ph_info = {
-    'strong wind': {'en': 'Strong wind', 'ru': 'Сильный ветер'},
-    'hailstorm': {'en': 'Hailstorm', 'ru': 'Град'},
-    'hurricane': {'en': 'Hurricane', 'ru': 'Ураган'},
-    'thunderstorm': {'en': 'Thunderstorm', 'ru': 'Гроза'},
-    'rain': {'en': 'Rain', 'ru': 'Дождь'},
-    'heavy rain': {'en': 'Heavy rain', 'ru': 'Сильный дождь'},
-    'intense heat': {'en': 'Intense heat', 'ru': 'Сильная жара'},
-    'positive temperature': {'en': 'Positive temperature', 'ru': 'Положительная температура'},
-    'negative temperature': {'en': 'Negative temperature', 'ru': 'Отрицательная температура'},
-    'wind speed': {'en': 'Wind speed', 'ru': 'Скорость ветра'},
-    'humidity': {'en': 'Humidity', 'ru': 'Влажность'},
 }

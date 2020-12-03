@@ -16,7 +16,6 @@ BASE_DIR = os.path.dirname(CUR_DIR)
 server = Flask(__name__)
 
 server.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-# server.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///C:\\Users\\shade\\Desktop\\projects\\weather_bot\\bot.db'
 server.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
 
 db = SQLAlchemy(server)

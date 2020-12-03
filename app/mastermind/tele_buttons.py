@@ -1,11 +1,11 @@
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, KeyboardButton, ReplyKeyboardMarkup
 
-from app.data.localization import inline_button_names, button_names
+from app.data.localization import phenomenon_button_names, button_names
 from app.models import Phenomenon, User, ReminderTime
 
 temp_buttons = ['temp_btn1', 'temp_btn2', 'temp_btn3', 'temp_btn4']
 phenomena_list = ["strong wind", "hailstorm", "hurricane", "thunderstorm", "rain", "heavy rain", "intense heat"]
-ph_manual_list = ['positive temperature', 'negative temperature', 'wind speed', 'humidity']
+ph_manual_list = ['temperature more', 'temperature less', 'wind speed', 'humidity']
 additional_btns = ['remove all', 'back']
 
 
@@ -57,7 +57,7 @@ def gen_markup_phenomena(user_id, lang):
                 tick = '✅ '
             else:
                 tick = '✖'
-            temp_button_dict[temp_btn] = InlineKeyboardButton(f"{tick}{inline_button_names[phenomenon][lang]}",
+            temp_button_dict[temp_btn] = InlineKeyboardButton(f"{tick}{phenomenon_button_names[phenomenon][lang]}",
                                                               callback_data=f"phenomenon {phenomenon}")
         button_values = [v for k, v in temp_button_dict.items()]
         markup.add(button_values[0], button_values[1])
@@ -68,10 +68,10 @@ def gen_markup_phenomena(user_id, lang):
         tick = '✖'
     markup.add(
         InlineKeyboardButton(
-            f"{tick}{inline_button_names[phenomena_list[-1]][lang]}", callback_data='phenomenon intense heat'),
-        InlineKeyboardButton(f"{inline_button_names['manually'][lang]}", callback_data='phenomena manually'),
-        InlineKeyboardButton(f"{inline_button_names['all phenomena'][lang]}", callback_data='all phenomena'),
-        InlineKeyboardButton(f"{inline_button_names['set time'][lang]}", callback_data='set time phenomena')
+            f"{tick}{phenomenon_button_names[phenomena_list[-1]][lang]}", callback_data='phenomenon intense heat'),
+        InlineKeyboardButton(f"{phenomenon_button_names['manually'][lang]}", callback_data='phenomena manually'),
+        InlineKeyboardButton(f"{phenomenon_button_names['all phenomena'][lang]}", callback_data='all phenomena'),
+        InlineKeyboardButton(f"{phenomenon_button_names['set time'][lang]}", callback_data='set time phenomena')
     )
     return markup
 
@@ -88,16 +88,16 @@ def gen_markup_phenomena_manually(user_id, lang):
                 tick = '✅ '
             else:
                 tick = '✖'
-            temp_button_dict[temp_btn] = InlineKeyboardButton(f"{tick}{inline_button_names[phenomenon][lang]}",
+            temp_button_dict[temp_btn] = InlineKeyboardButton(f"{tick}{phenomenon_button_names[phenomenon][lang]}",
                                                               callback_data=f"manually {phenomenon}")
         button_values = [v for k, v in temp_button_dict.items()]
         markup.add(button_values[0], button_values[1])
     markup.row_width = 2
     markup.add(
         InlineKeyboardButton(
-            f"{inline_button_names[additional_btns[0]][lang]}", callback_data=f"manually {additional_btns[0]}"),
+            f"{phenomenon_button_names[additional_btns[0]][lang]}", callback_data=f"manually {additional_btns[0]}"),
         InlineKeyboardButton(
-            f"{inline_button_names[additional_btns[1]][lang]}", callback_data=f"manually {additional_btns[1]}")
+            f"{phenomenon_button_names[additional_btns[1]][lang]}", callback_data=f"manually {additional_btns[1]}")
     )
     return markup
 
@@ -118,10 +118,10 @@ def gen_markup_hours(user_id, is_phenomenon, lang, callback='', ):
         markup.add(button_values[0], button_values[1], button_values[2], button_values[3])
     if callback == '_ph':
         markup.add(InlineKeyboardButton(
-            inline_button_names['back'][lang], callback_data=f"back_to{callback}"))
+            phenomenon_button_names['back'][lang], callback_data=f"back_to{callback}"))
     else:
         markup.add(InlineKeyboardButton(
-            f"{inline_button_names['remove all'][lang]}", callback_data="daily remove all"))
+            f"{phenomenon_button_names['remove all'][lang]}", callback_data="daily remove all"))
     return markup
 
 
@@ -140,7 +140,7 @@ def gen_markup_minutes(user_id, hours, is_phenomenon, lang, callback='', ):
             mins += 10
         button_values = [v for k, v in temp_button_dict.items()]
         markup.add(button_values[0], button_values[1], button_values[2])
-    markup.add(InlineKeyboardButton(inline_button_names['back'][lang], callback_data=f"back_to_hours{callback}"))
+    markup.add(InlineKeyboardButton(phenomenon_button_names['back'][lang], callback_data=f"back_to_hours{callback}"))
     return markup
 
 

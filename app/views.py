@@ -5,7 +5,7 @@ from telebot.apihelper import ApiException
 
 from app import server, bot
 from app.credentials import HEROKU_DEPLOY_DOMAIN, NGROK_DEPLOY_DOMAIN, TOKEN, DEBUG
-from app.data.localization import button_names, inline_button_names
+from app.data.localization import button_names, phenomenon_button_names
 from app.mastermind.formating import *
 from app.mastermind.scheduling import delete_ph_time_jobs, set_phenomenon_time, set_daily, sched
 from app.mastermind.tele_buttons import phenomena_list, gen_markup_minutes, gen_markup_hours, gen_markup_phenomena, \
@@ -142,7 +142,7 @@ def add_city(message):
     city = message.text
 
     btns = {value[data['lang']] for key, value in button_names.items()}
-    inline_btns = {value[data['lang']] for key, value in inline_button_names.items()}
+    inline_btns = {value[data['lang']] for key, value in phenomenon_button_names.items()}
     if message.text in btns or message.text in inline_btns:
         return bot.send_message(data['chat_id'], hints['cancel'][data['lang']])
 
@@ -187,25 +187,25 @@ def button_info(message, data):
 
     ph_text = ''
     for ph in all_phenomena:
-        ph_text += f'{ph_info[ph.phenomenon][data["lang"]]}\n'
+        ph_text += f'{phenomenon_button_names[ph.phenomenon][data["lang"]]}\n'
     if not ph_text:
         ph_text = f"{info[data['lang']][13]}\n"
 
     man_ph_text = ''
     for man_ph in all_manual_phenomena:
-        if man_ph.phenomenon == ph_info['wind speed']['en'].lower():
+        if man_ph.phenomenon == phenomenon_button_names['wind speed']['en'].lower():
             unit = f' {info[data["lang"]][10]}'  # m/s
-        elif man_ph.phenomenon == ph_info['humidity']['en'].lower():
+        elif man_ph.phenomenon == phenomenon_button_names['humidity']['en'].lower():
             unit = '%'
         else:  # temperature
             unit = '°C'
-        man_ph_text += f'{ph_info[man_ph.phenomenon][data["lang"]]}: {man_ph.value}{unit}\n'
+        man_ph_text += f'{phenomenon_button_names[man_ph.phenomenon][data["lang"]]}: {man_ph.value}{unit}\n'
     if not man_ph_text:
         man_ph_text = f"{info[data['lang']][13]}\n"
 
     daily_btn = button_names["daily"][data['lang']]
     ph_btn = button_names["phenomena"][data['lang']]
-    man_ph_btn = inline_button_names["manually"][data['lang']]
+    man_ph_btn = phenomenon_button_names["manually"][data['lang']]
     ph_time = ReminderTime.query.filter_by(user_id=data['user'].id, is_phenomenon=True).first()
 
     try:
@@ -377,7 +377,7 @@ def add_phenomenon_manually(message):
             db.session.commit()
         finally:
             return bot.send_message(
-                chat_id, f"{ph_data.capitalize()} {hints['phenomenon delete'][lang]}",
+                chat_id, f'{hints["phenomenon"][lang]} "{phenomenon_button_names[ph_data][lang]}" {hints["phenomenon delete"][lang]}',
                 reply_markup=gen_markup_phenomena_manually(user.id, lang))
 
     elif ph_data in ph_manual_list:  # if user enters a wrong number
@@ -385,8 +385,6 @@ def add_phenomenon_manually(message):
         if ph_data in ph_manual_list[2:]:
             if msg < 0:
                 text = f"{hints['num pos expected'][lang]}"
-        # elif ph_data == 'negative temperature' and msg > 0:
-        #     text = f"{hints['num neg expected'][lang]}"
         if text:
             bot.send_message(chat_id, text)
             return callback_phenomenon_manually(callback_query_ph_manually, intro=False)
@@ -400,7 +398,7 @@ def add_phenomenon_manually(message):
     finally:
         db.session.commit()
         return bot.send_message(
-            chat_id, f"{hints['phenomenon'][lang]} {ph_data} {hints['ph manually set'][lang]} {msg}",
+            chat_id, f'{hints["phenomenon"][lang]} "{phenomenon_button_names[ph_data][lang]}" {hints["ph manually set"][lang]} {msg}',
             reply_markup=gen_markup_phenomena_manually(user.id, lang))
 
 
@@ -498,7 +496,7 @@ def callback_phenomenon(call):
     bot.answer_callback_query(
         callback_query_id=call.id, show_alert=False,
         text=f"{hints['phenomenon set del'][user.language]} "
-             f"{inline_button_names[phenomenon_data][user.language]} {text}")
+             f"{phenomenon_button_names[phenomenon_data][user.language]} {text}")
 
 
 @bot.callback_query_handler(func=lambda call: call.data == "back_to_ph")
@@ -571,8 +569,8 @@ def callback_inline_back(call):
 @bot.callback_query_handler(func=lambda call: call.data == "daily remove all")
 def callback_remove_all_daily(call):
     user = User.query.filter_by(chat_id=call.from_user.id).first()
+    all_reminders = ReminderTime.query.filter_by(user_id=user.id, is_phenomenon=False).all()
 
-    all_reminders = user.reminder_time
     for reminder in all_reminders:
         sched.remove_job(job_id=reminder.job_id)  # remove the time from schedule
         db.session.delete(reminder)  # remove the time from db
