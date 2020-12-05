@@ -2,7 +2,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 from app import bot, db
 from app.mastermind.formating import get_today_weather_info, get_phenomenon_info
-from app.models import User, ReminderTime, Phenomenon
+from app.models import User, ReminderTime
 
 sched = BackgroundScheduler()
 

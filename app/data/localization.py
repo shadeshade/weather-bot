@@ -21,7 +21,7 @@ phenomenon_button_names = {
     'hailstorm': {'en': 'Hailstorm', 'ru': 'Град'},
     'thunderstorm': {'en': 'Thunderstorm', 'ru': 'Гроза'},
     'rain': {'en': 'Rain', 'ru': 'Дождь'},
-    'heavy rain': {'en': 'Heavy rain', 'ru': 'Сильный дождь'},
+    'heavy rain': {'en': 'Heavy rain', 'ru': 'Ливень'},
 
     'temperature more': {'en': 'Temperature is more', 'ru': 'Температура больше'},
     'temperature less': {'en': 'Temperature is less', 'ru': 'Температура меньше'},
@@ -130,4 +130,17 @@ info = {
         'Попробуйте еще раз', 'Сейчас', 'Ветер', 'Ощущается как', 'Световой день', 'Восход - Закат', 'на', 'Штиль',
         'Погода на 7 дней', 'Настройки', 'м/с', 'Температура', 'Время', 'не задано'
     ],
+}
+
+# check if a phenomenon has an alias for returning the condition
+phenomenon_aliases = {
+    'hailstorm': {'en': ['hail', 'hailstorm', 'thunderstorm with hail'],
+                  'ru': ['град', 'гроза с градом']},
+    'thunderstorm': {'en': ['thunderstorm', 'thunderstorm with hail', 'thunderstorm with rain'],
+                     'ru': ['гроза', 'гроза с градом', 'дождь с грозой']},
+    'rain': {'en': ['rain', 'moderate rain', 'wet snow'],
+             'ru': ['дождь', 'умеренно сильный дождь', 'дождь со снегом']},
+    'heavy rain': {
+        'en': ['thunderstorm with rain', 'heavy rain', 'continuous-heavy-rain', 'showers', 'thunderstorm with hail'],
+        'ru': ['дождь с грозой', 'ливень', 'длительный сильный дождь', 'ливень', 'гроза с градом', 'сильный дождь']},
 }

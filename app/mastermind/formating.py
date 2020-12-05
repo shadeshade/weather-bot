@@ -6,11 +6,10 @@ from transliterate.exceptions import LanguageDetectionError
 
 from app import logger
 from app.data import emoji_conditions
-from app.data.localization import hints, info, phenomenon_button_names
+from app.data.localization import hints, info, phenomenon_button_names, phenomenon_aliases
 from app.data.utils import get_city_data
 from app.mastermind.parsing import get_weather_info, get_extended_info, get_extended_info_for_week
-from app.mastermind.tele_buttons import ph_manual_list
-from app.models import Phenomenon, User
+from app.models import Phenomenon
 
 
 def get_start(first_name, lang):
@@ -224,21 +223,7 @@ def get_phenomenon_info(user):
     user_id = user.id
     lang = user.language
     all_phenomena = Phenomenon.query.filter_by(user_id=user_id).all()
-    # next_day_info = get_next_day(user.city_name, lang, phenomenon_info=True)
-    next_day_info = {
-        'part1': {
-            'daypart_temp': '+7°…+8°', 'daypart_condition': 'Сильный дождь', 'daypart_wind': '5,3',
-            'daypart_humidity': '92%'
-        }, 'part2': {
-            'daypart_temp': '+7°', 'daypart_condition': 'Гроза', 'daypart_wind': '5,9',
-            'daypart_humidity': '91%'
-        }, 'part3': {
-            'daypart_temp': '+7°', 'daypart_condition': 'Гроза', 'daypart_wind': '5,3',
-            'daypart_humidity': '92%'
-        }, 'part4': {
-            'daypart_temp': '+6°', 'daypart_condition': 'Небольшой дождь', 'daypart_wind': '4,8',
-            'daypart_humidity': '93%'
-        }}
+    next_day_info = get_next_day(user.city_name, lang, phenomenon_info=True)
 
     for day_part_info in next_day_info.values():
         temp = day_part_info['daypart_temp'].split('…')
@@ -276,13 +261,15 @@ def get_phenomenon_info(user):
     humidity = next_day_max_val['humidity']
 
     text = ''
-
     # checking if phenomena expected tomorrow
     phenomena_list = [ph for ph in all_phenomena if ph.is_manually is False]
     for phenomenon in phenomena_list:
         existing_ph = phenomenon_button_names[phenomenon.phenomenon][lang].lower()
-        if existing_ph in condition and existing_ph not in text:
-            text += f'\n{existing_ph.capitalize()}'
+        if existing_ph not in text and phenomenon.phenomenon in phenomenon_aliases.keys():
+            for cond in condition:
+                if cond in phenomenon_aliases[phenomenon.phenomenon][lang]:
+                    text += f'\n{cond.capitalize()}'
+                    break
             continue
         elif existing_ph == phenomenon_button_names["strong wind"][lang].lower():
             if 29 >= wind >= 12:

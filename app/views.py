@@ -5,7 +5,7 @@ from telebot.apihelper import ApiException
 
 from app import server, bot
 from app.credentials import HEROKU_DEPLOY_DOMAIN, NGROK_DEPLOY_DOMAIN, TOKEN, DEBUG
-from app.data.localization import button_names, phenomenon_button_names
+from app.data.localization import button_names
 from app.mastermind.formating import *
 from app.mastermind.scheduling import delete_ph_time_jobs, set_phenomenon_time, set_daily, sched
 from app.mastermind.tele_buttons import phenomena_list, gen_markup_minutes, gen_markup_hours, gen_markup_phenomena, \
@@ -254,7 +254,10 @@ def respond(message, data):
         city = message.text
         response = get_today_weather_info(city, data['lang'], message.date)
 
-        if 'Try again' not in response:
+        if 'Try again' in response:
+            return bot.send_message(data['chat_id'], text=response,
+                                    reply_markup=call_main_keyboard(data['lang']))
+        else:
             if not data['city_name']:
                 data['user'].city_name = city
                 db.session.commit()
@@ -377,7 +380,8 @@ def add_phenomenon_manually(message):
             db.session.commit()
         finally:
             return bot.send_message(
-                chat_id, f'{hints["phenomenon"][lang]} "{phenomenon_button_names[ph_data][lang]}" {hints["phenomenon delete"][lang]}',
+                chat_id,
+                f'{hints["phenomenon"][lang]} "{phenomenon_button_names[ph_data][lang]}" {hints["phenomenon delete"][lang]}',
                 reply_markup=gen_markup_phenomena_manually(user.id, lang))
 
     elif ph_data in ph_manual_list:  # if user enters a wrong number
@@ -398,7 +402,8 @@ def add_phenomenon_manually(message):
     finally:
         db.session.commit()
         return bot.send_message(
-            chat_id, f'{hints["phenomenon"][lang]} "{phenomenon_button_names[ph_data][lang]}" {hints["ph manually set"][lang]} {msg}',
+            chat_id,
+            f'{hints["phenomenon"][lang]} "{phenomenon_button_names[ph_data][lang]}" {hints["ph manually set"][lang]} {msg}',
             reply_markup=gen_markup_phenomena_manually(user.id, lang))
 
 
