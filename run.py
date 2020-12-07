@@ -5,8 +5,8 @@ from app.views import set_webhook
 
 
 def run_app():
-    set_webhook()
-    back_up_reminders()
+    # set_webhook()
+    # back_up_reminders()
     return server
 
 
