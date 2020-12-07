@@ -4,11 +4,11 @@ from app.mastermind.scheduling import back_up_reminders
 from app.views import set_webhook
 
 
-def run_app():
+def run_app(*args):
     return server
 
 #
 # if __name__ == '__main__':
 #     set_webhook()
-#     back_up_reminders()
-#     server.run(threaded=True, host=SERVER_IP, port=PORT, debug=DEBUG, use_reloader=False)
+    # back_up_reminders()
+    # server.run(threaded=True, host=SERVER_IP, port=PORT, debug=DEBUG, use_reloader=False)
