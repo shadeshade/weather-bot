@@ -100,7 +100,7 @@ def button_settings(message, data):
 @view_pre_process_actions(check_city_present=True)
 def button_daily(message, data):
     """Handle button 'daily'"""
-    reminders = ReminderTime.query.filter_by(is_phenomenon=False).all()
+    reminders = Reminder.query.filter_by(is_phenomenon=False).all()
     for reminder in reminders:
         if reminder.hours is None or reminder.minutes is None:
             db.session.delete(reminder)
@@ -171,7 +171,7 @@ def button_info(message, data):
     """Handle button 'info'"""
     all_phenomena = Phenomenon.query.filter_by(user_id=data['user'].id, is_manually=False).all()
     all_manual_phenomena = Phenomenon.query.filter_by(user_id=data['user'].id, is_manually=True).all()
-    all_daily = ReminderTime.query.filter_by(user_id=data['user'].id, is_phenomenon=False).all()
+    all_daily = Reminder.query.filter_by(user_id=data['user'].id, is_phenomenon=False).all()
 
     daily_text = ''
     for daily in all_daily:
@@ -206,7 +206,7 @@ def button_info(message, data):
     daily_btn = button_names["daily"][data['lang']]
     ph_btn = button_names["phenomena"][data['lang']]
     man_ph_btn = phenomenon_button_names["manually"][data['lang']]
-    ph_time = ReminderTime.query.filter_by(user_id=data['user'].id, is_phenomenon=True).first()
+    ph_time = Reminder.query.filter_by(user_id=data['user'].id, is_phenomenon=True).first()
 
     try:
         hours = ph_time.hours
@@ -297,11 +297,11 @@ def callback_phenomenon_min(call):
     phenomenon_hours = call.data[:2]
     phenomenon_minutes = call.data[3:5]
 
-    phenomenon = ReminderTime.query.filter_by(
+    phenomenon = Reminder.query.filter_by(
         user_id=user.id, hours=phenomenon_hours, minutes=phenomenon_minutes, is_phenomenon=True).first()
 
     delete_ph_time_jobs(user.id)
-    ph_reminders = ReminderTime.query.filter_by(user_id=user.id, is_phenomenon=True).all()
+    ph_reminders = Reminder.query.filter_by(user_id=user.id, is_phenomenon=True).all()
     for reminder in ph_reminders:
         db.session.delete(reminder)
     db.session.commit()
@@ -309,8 +309,8 @@ def callback_phenomenon_min(call):
     if phenomenon:
         text = f"{hints['schedule delete'][user.language]}"
     else:
-        new_phenomenon = ReminderTime(user_id=user.id, hours=phenomenon_hours, minutes=phenomenon_minutes,
-                                      is_phenomenon=True)
+        new_phenomenon = Reminder(user_id=user.id, hours=phenomenon_hours, minutes=phenomenon_minutes,
+                                  is_phenomenon=True)
         db.session.add(new_phenomenon)  # commits in set_phenomenon_time func
         set_phenomenon_time(new_phenomenon, new_phenomenon.hours, new_phenomenon.minutes)
         text = f"{hints['schedule set'][user.language]} {phenomenon_hours}:{phenomenon_minutes}"
@@ -541,7 +541,7 @@ def callback_inline_daily(call):
 
     reminder_hours = call.data[:2]
     reminder_minutes = call.data[3:5]
-    existing_reminder = ReminderTime.query.filter_by(
+    existing_reminder = Reminder.query.filter_by(
         user_id=user_id, hours=reminder_hours, minutes=reminder_minutes, is_phenomenon=False).first()
     if existing_reminder:  # if reminder exists
         sched.remove_job(job_id=existing_reminder.job_id)  # remove the time from schedule
@@ -549,7 +549,7 @@ def callback_inline_daily(call):
         db.session.commit()
         text = f"{hints['schedule delete'][lang]}"
     else:  # if reminder does not exist
-        new_reminder = ReminderTime(
+        new_reminder = Reminder(
             user_id=user_id, hours=reminder_hours, minutes=reminder_minutes, is_phenomenon=False)
         db.session.add(new_reminder)
         db.session.commit()
@@ -574,7 +574,7 @@ def callback_inline_back(call):
 @bot.callback_query_handler(func=lambda call: call.data == "daily remove all")
 def callback_remove_all_daily(call):
     user = User.query.filter_by(chat_id=call.from_user.id).first()
-    all_reminders = ReminderTime.query.filter_by(user_id=user.id, is_phenomenon=False).all()
+    all_reminders = Reminder.query.filter_by(user_id=user.id, is_phenomenon=False).all()
 
     for reminder in all_reminders:
         sched.remove_job(job_id=reminder.job_id)  # remove the time from schedule

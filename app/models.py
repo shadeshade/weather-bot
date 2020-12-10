@@ -7,7 +7,7 @@ class User(db.Model):
     username = db.Column(db.String(32))
     chat_id = db.Column(db.Integer, nullable=False)
     city_name = db.Column(db.String(20))
-    reminder_time = db.relationship('ReminderTime', backref='telegram_user', lazy=True)
+    reminder = db.relationship('Reminder', backref='telegram_user', lazy=True)
     phenomenon = db.relationship('Phenomenon', backref='telegram_user', lazy=True)
     language = db.Column(db.String(2))
 
@@ -37,7 +37,7 @@ class User(db.Model):
         return {'user': user, 'username': username, 'city_name': city_name, 'chat_id': chat_id, 'lang': lang}
 
 
-class ReminderTime(db.Model):
+class Reminder(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     is_phenomenon = db.Column(db.Boolean, default=False)
     hours = db.Column(db.Integer)

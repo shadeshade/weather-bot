@@ -1,7 +1,7 @@
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, KeyboardButton, ReplyKeyboardMarkup
 
 from app.data.localization import phenomenon_button_names, button_names
-from app.models import Phenomenon, User, ReminderTime
+from app.models import Phenomenon, User, Reminder
 
 temp_buttons = ['temp_btn1', 'temp_btn2', 'temp_btn3', 'temp_btn4']
 phenomena_list = ["strong wind", "hailstorm", "hurricane", "thunderstorm", "rain", "heavy rain", "intense heat"]
@@ -107,7 +107,7 @@ def gen_markup_hours(user_id, is_phenomenon, lang, callback='', ):
     for hours in range(0, 24, 4):
         temp_button_dict = {}
         for temp_btn in temp_buttons:
-            if ReminderTime.query.filter_by(user_id=user_id, hours=hours, is_phenomenon=is_phenomenon).first():
+            if Reminder.query.filter_by(user_id=user_id, hours=hours, is_phenomenon=is_phenomenon).first():
                 tick = '✅ '
             else:
                 tick = '✖'
@@ -130,7 +130,7 @@ def gen_markup_minutes(user_id, hours, is_phenomenon, lang, callback='', ):
     for mins in range(0, 60, 30):
         temp_button_dict = {}
         for temp_btn in temp_buttons[:3]:
-            if ReminderTime.query.filter_by(
+            if Reminder.query.filter_by(
                     user_id=user_id, hours=hours, minutes=mins, is_phenomenon=is_phenomenon).first():
                 tick = '✅ '
             else:
