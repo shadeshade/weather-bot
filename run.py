@@ -3,11 +3,11 @@ from app.credentials import SERVER_IP, PORT, DEBUG
 from app.mastermind.scheduling import back_up_reminders
 from app.views import set_webhook
 
-# run_app = server
-def run_app(*args):
+run_app = server
+# def run_app(*args):
     # back_up_reminders()
     # set_webhook()
-    return server
+    # return server
 
 #
 # if __name__ == '__main__':

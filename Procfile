@@ -1,1 +1,1 @@
-module = run:run_app()
+web: gunicorn run:run_app
