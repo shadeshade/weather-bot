@@ -1,5 +1,6 @@
 import os
 
+import pytz
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from apscheduler.schedulers.background import BackgroundScheduler
 
@@ -7,10 +8,14 @@ from app import bot, db
 from app.mastermind.formating import get_today_weather_info, get_phenomenon_info
 from app.models import User, Reminder
 
+TIME_ZONE_MSK = pytz.timezone('Europe/Moscow')
+
 jobstores = {
     'default': SQLAlchemyJobStore(url=os.getenv("DATABASE_URL"))
 }
-sched = BackgroundScheduler(jobstores=jobstores)
+sched = BackgroundScheduler()
+sched.configure(jobstores=jobstores, timezone=TIME_ZONE_MSK)
+sched.start()
 
 
 # Handle '/daily' (setting a daily reminder)
