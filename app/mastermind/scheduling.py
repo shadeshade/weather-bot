@@ -76,7 +76,5 @@ def back_up_reminders():
     for reminder in daily_reminders:
         set_daily(reminder, reminder.hours, reminder.minutes)
 """
-Change requirements, 
-Use build in job storage,
-Specify jobstore, Added timezone and start call for scheduler
+Change requirements, Use build in job storage, Specify jobstore, Added timezone and start call for scheduler
 """
