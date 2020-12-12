@@ -6,7 +6,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from app import bot, db
 from app.mastermind.formating import get_today_weather_info, get_phenomenon_info
 from app.models import User, Reminder
-#check2
+
 jobstores = {
     'default': SQLAlchemyJobStore(url=os.getenv("DATABASE_URL"))
 }
@@ -55,7 +55,7 @@ def send_phenomenon_reminder(user_id):
 def delete_ph_time_jobs(user_id):
     ph_reminders = Reminder.query.filter_by(user_id=user_id, is_phenomenon=True).all()
     for reminder in ph_reminders:
-        sched.remove_job(job_id=reminder.job_id)
+        sched.remove_job(job_id=reminder.job_id, jobstore='default')
 
 
 def back_up_reminders():

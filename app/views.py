@@ -544,7 +544,7 @@ def callback_inline_daily(call):
     existing_reminder = Reminder.query.filter_by(
         user_id=user_id, hours=reminder_hours, minutes=reminder_minutes, is_phenomenon=False).first()
     if existing_reminder:  # if reminder exists
-        sched.remove_job(job_id=existing_reminder.job_id)  # remove the time from schedule
+        sched.remove_job(job_id=existing_reminder.job_id, jobstore='default')  # remove the time from schedule
         db.session.delete(existing_reminder)  # remove the time from db
         db.session.commit()
         text = f"{hints['schedule delete'][lang]}"
@@ -577,7 +577,7 @@ def callback_remove_all_daily(call):
     all_reminders = Reminder.query.filter_by(user_id=user.id, is_phenomenon=False).all()
 
     for reminder in all_reminders:
-        sched.remove_job(job_id=reminder.job_id)  # remove the time from schedule
+        sched.remove_job(job_id=reminder.job_id, jobstore='default')  # remove the time from schedule
         db.session.delete(reminder)  # remove the time from db
     db.session.commit()
     try:
