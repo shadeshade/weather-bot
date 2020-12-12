@@ -6,7 +6,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from app import bot, db
 from app.mastermind.formating import get_today_weather_info, get_phenomenon_info
 from app.models import User, Reminder
-
+#check
 jobstores = {
     'default': SQLAlchemyJobStore(url=os.getenv("DATABASE_URL"))
 }
