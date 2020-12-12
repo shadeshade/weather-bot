@@ -8,3 +8,5 @@ Flask==1.1.2
 transliterate==1.10.2
 psycopg2==2.8.6
 psycopg2-binary==2.8.6
+
+Change requirements, Use build in job storage, Specify jobstore, Added timezone and start call for scheduler
