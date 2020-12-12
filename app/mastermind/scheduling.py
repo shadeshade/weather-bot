@@ -75,3 +75,8 @@ def back_up_reminders():
     daily_reminders = [reminder for reminder in all_reminders if reminder.is_phenomenon is False]
     for reminder in daily_reminders:
         set_daily(reminder, reminder.hours, reminder.minutes)
+"""
+Change requirements, 
+Use build in job storage,
+Specify jobstore, Added timezone and start call for scheduler
+"""
