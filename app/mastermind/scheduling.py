@@ -1,10 +1,10 @@
-from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.schedulers.background import BlockingScheduler
 
 from app import bot, db
 from app.mastermind.formating import get_today_weather_info, get_phenomenon_info
 from app.models import User, Reminder
 
-sched = BackgroundScheduler()
+sched = BlockingScheduler()
 
 
 # Handle '/daily' (setting a daily reminder)
