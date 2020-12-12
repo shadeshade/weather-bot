@@ -7,7 +7,7 @@ from app import server, bot
 from app.credentials import HEROKU_DEPLOY_DOMAIN, NGROK_DEPLOY_DOMAIN, TOKEN, DEBUG
 from app.data.localization import button_names
 from app.mastermind.formating import *
-from app.mastermind.scheduling import delete_ph_time_jobs, set_phenomenon_time, set_daily, sched, back_up_reminders
+from app.mastermind.scheduling import delete_ph_time_jobs, set_phenomenon_time, set_daily, scheduler, back_up_reminders
 from app.mastermind.tele_buttons import phenomena_list, gen_markup_minutes, gen_markup_hours, gen_markup_phenomena, \
     gen_markup_language, call_main_keyboard, call_settings_keyboard, gen_markup_phenomena_manually, \
     ph_manual_list
@@ -544,7 +544,7 @@ def callback_inline_daily(call):
     existing_reminder = Reminder.query.filter_by(
         user_id=user_id, hours=reminder_hours, minutes=reminder_minutes, is_phenomenon=False).first()
     if existing_reminder:  # if reminder exists
-        sched.remove_job(job_id=existing_reminder.job_id, jobstore='default')  # remove the time from schedule
+        scheduler.remove_job(job_id=existing_reminder.job_id, jobstore='default')  # remove the time from schedule
         db.session.delete(existing_reminder)  # remove the time from db
         db.session.commit()
         text = f"{hints['schedule delete'][lang]}"
@@ -577,7 +577,7 @@ def callback_remove_all_daily(call):
     all_reminders = Reminder.query.filter_by(user_id=user.id, is_phenomenon=False).all()
 
     for reminder in all_reminders:
-        sched.remove_job(job_id=reminder.job_id, jobstore='default')  # remove the time from schedule
+        scheduler.remove_job(job_id=reminder.job_id, jobstore='default')  # remove the time from schedule
         db.session.delete(reminder)  # remove the time from db
     db.session.commit()
     try:
