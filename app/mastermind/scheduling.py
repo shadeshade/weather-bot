@@ -1,10 +1,16 @@
-from apscheduler.schedulers.background import BlockingScheduler
+import os
+
+from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
+from apscheduler.schedulers.background import BackgroundScheduler
 
 from app import bot, db
 from app.mastermind.formating import get_today_weather_info, get_phenomenon_info
 from app.models import User, Reminder
 
-sched = BlockingScheduler()
+jobstores = {
+    'default': SQLAlchemyJobStore(url=os.getenv("DATABASE_URL"))
+}
+sched = BackgroundScheduler(jobstores=jobstores)
 
 
 # Handle '/daily' (setting a daily reminder)

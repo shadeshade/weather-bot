@@ -60,8 +60,6 @@ def get_update():
 @view_pre_process_actions()
 def command_start(message, data):
     """Handle '/start'"""
-    back_up_reminders()
-
     response = get_start(data['username'], data['lang'])
     bot.send_message(data['chat_id'], text=response,
                      reply_markup=call_main_keyboard(data['lang']), parse_mode='html')
