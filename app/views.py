@@ -7,7 +7,7 @@ from app import server, bot
 from app.credentials import HEROKU_DEPLOY_DOMAIN, NGROK_DEPLOY_DOMAIN, TOKEN, DEBUG
 from app.data.localization import button_names
 from app.mastermind.formating import *
-from app.mastermind.scheduling import delete_ph_time_jobs, set_phenomenon_time, set_daily, scheduler, back_up_reminders
+from app.mastermind.scheduling import delete_ph_time_jobs, set_phenomenon_time, set_daily, scheduler
 from app.mastermind.tele_buttons import phenomena_list, gen_markup_minutes, gen_markup_hours, gen_markup_phenomena, \
     gen_markup_language, call_main_keyboard, call_settings_keyboard, gen_markup_phenomena_manually, \
     ph_manual_list

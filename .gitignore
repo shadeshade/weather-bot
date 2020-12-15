@@ -3,9 +3,5 @@ __pycache__
 ngrok.exe
 *.log
 *.db
-shade-weather-telegram-bot
-.example.env
-protected-peak-33113
 /venv/
-/venv1/
 /.env

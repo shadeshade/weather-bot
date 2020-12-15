@@ -11,7 +11,7 @@
 # Deploying on Heroku
 
 From your dashboard on Heroku create a new app, once you create
- an app it will direct you to the deploy page.
+ the app it will direct you to the deploy page.
  
 Take example values from `.example.env` (modify if needed) 
 and set them in your dashboard (Settings -> Config Vars)
@@ -24,8 +24,15 @@ Needed variables (from `.example.env`):
 - `TOKEN` - put your bot's token
  
 Now go back to the deploy tab and proceed with the steps:
-* login to heroku: `heroku login` . Note that sometimes this method get stuck in waiting for login,
- if this is the case with you, you can login using: `heroku login -i`
+* login to heroku: 
+```
+heroku login
+``` 
+Note that sometimes this method get stuck in waiting for login,
+ if this is the case with you, you can login using:
+```
+heroku login -i
+```
 
 Here we clone our repository and open
 in development environment:
@@ -70,7 +77,10 @@ git clone "https://github.com/shadeshade/weather_bot.git"
 cd weather_bot
 ```
 
-2. Install requirements: `pip install requirements.txt`
+2. Install requirements: 
+```
+pip install requirements.txt
+```
 
 3. `ngrok http 8443` . You will get something like this:
 ![Image](app/static/NgrokCapture.PNG)
@@ -84,4 +94,7 @@ cd weather_bot
     - `TOKEN` - put your bot's token
     - `PORT` and `SERVER_IP`
 
-5. Now you can start your bot: `python run.py` 
+5. Now you can start your bot: 
+```
+python run.py
+``` 

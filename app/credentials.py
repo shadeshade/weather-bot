@@ -3,7 +3,6 @@ import os
 from dotenv import load_dotenv
 
 load_dotenv(dotenv_path='.env')
-# load_dotenv(dotenv_path='.env.prod')
 
 TOKEN = os.getenv("TOKEN")
 HEROKU_DEPLOY_DOMAIN = os.getenv("HEROKU_DEPLOY_DOMAIN")
