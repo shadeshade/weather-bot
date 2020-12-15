@@ -10,7 +10,6 @@
 
 # Deploying on Heroku
 
-## todo: check if instruction is valid
 From your dashboard on Heroku create a new app, once you create
  an app it will direct you to the deploy page.
  
