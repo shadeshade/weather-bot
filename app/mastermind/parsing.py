@@ -34,7 +34,7 @@ def get_weather_info(city_name, lang):
     condition = weather_soup.find('div', attrs={
         'class': 'link__condition'}).text  # condition comment (clear, windy etc.)
 
-    feels_like = weather_soup.find('div', attrs={'class': 'term__value'})
+    feels_like = weather_soup.find('div', attrs={'class': 'link__feelings fact__feelings'})
     feels_like = feels_like.find('div', attrs={'class': 'temp'}).text  # feels like temperature
 
     daylight_soup = soup.find('div', attrs={'class': 'sun-card__info'})
