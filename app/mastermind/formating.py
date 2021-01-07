@@ -37,13 +37,14 @@ def transliterate_name(city_to_translit):
     return new_name
 
 
-def get_day_part(ts, sunset):  # timestamp in Unix time
+def get_day_part(ts, sunrise, sunset):  # timestamp in Unix time
     if isinstance(ts, int):
         msg_time = datetime.fromtimestamp(ts).strftime('%H:%M').replace(':', '.')
     else:
         msg_time = ts
+    sunrise = sunrise.replace(':', '.')
     sunset = sunset.replace(':', '.')
-    if float(msg_time) > float(sunset):
+    if float(msg_time) > float(sunset) or float(msg_time) < float(sunrise):
         return 'night'
     else:
         return 'day'
@@ -117,12 +118,13 @@ def get_today_weather_info(city_name, lang, cur_timestamp):
     sunrise = weather_info["sunrise"]
     sunset = weather_info["sunset"]
 
-    day_time = get_day_part(cur_timestamp, sunset)
+    day_time = get_day_part(cur_timestamp, sunrise, sunset)
     weather_cond = get_condition(cond, day_time)
 
     message_part1 = f'<i>{header}</i>\n\n' \
                     f'<b>{info[lang][1]}: {temp}°; {info[lang][3]}: {feels_like}\n' \
-                    f'{info[lang][2]}: {wind_speed_and_direction}; {phenomenon_button_names["humidity"][lang]}: {humidity}\n' \
+                    f'{info[lang][2]}: {wind_speed_and_direction}; {phenomenon_button_names["humidity"][lang]}:' \
+                    f' {humidity}\n' \
                     f'{cond} {weather_cond}</b> \n\n'
 
     message_part2 = f'{info[lang][4]}: {daylight_hours}\n' \
