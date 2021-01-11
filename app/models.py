@@ -26,7 +26,11 @@ class User(db.Model):
 
         if not user:
             city_name = None
-            lang = message.from_user.language_code
+            try:
+                lang = message.from_user.language_code
+            except KeyError as err:
+                logger.warning(f'No such language error: {err}')
+                lang = 'en'
             user = User(username=username, chat_id=chat_id, language=lang)
             db.session.add(user)
             db.session.commit()
